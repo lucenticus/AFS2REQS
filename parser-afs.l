@@ -30,22 +30,24 @@ IS			(u|U|l|L)*
 "PAR"			{ count(); return(PAR); }
 "ALT"			{ count(); return(ALT); }
 "LOOP"			{ count(); return(LOOP); }
-
+"tt"			{ count(); return(TRUE); }
+"ff"			{ count(); return(FALSE); }
+"b"			{ count(); return(BOOL); }
 
 {L}({L}|{D})*		{
 				yylval.id = strdup(yytext);
 				count(); 
-				return(check_type());
+				return (IDENTIFIER);
 			}
 
-0[xX]{H}+{IS}?		{ count(); yylval.id = strdup(yytext); return(CONSTANT); }
-0{D}+{IS}?		{ count(); yylval.id = strdup(yytext); return(CONSTANT); }
-{D}+{IS}?		{ count(); yylval.id = strdup(yytext); return(CONSTANT); }
-L?'(\\.|[^\\'])+'	{ count(); yylval.id = strdup(yytext); return(CONSTANT); }
+0[xX]{H}+{IS}?		{ count(); yylval.id = strdup(yytext); return(IDENTIFIER); }
+0{D}+{IS}?		{ count(); yylval.id = strdup(yytext); return(IDENTIFIER); }
+{D}+{IS}?		{ count(); yylval.id = strdup(yytext); return(IDENTIFIER); }
+L?'(\\.|[^\\'])+'	{ count(); yylval.id = strdup(yytext); return(IDENTIFIER); }
 
-{D}+{E}{FS}?		{ count(); yylval.id = strdup(yytext); return(CONSTANT); }
-{D}*"."{D}+({E})?{FS}?	{ count(); yylval.id = strdup(yytext); return(CONSTANT); }
-{D}+"."{D}*({E})?{FS}?	{ count(); yylval.id = strdup(yytext); return(CONSTANT); }
+{D}+{E}{FS}?		{ count(); yylval.id = strdup(yytext); return(IDENTIFIER); }
+{D}*"."{D}+({E})?{FS}?	{ count(); yylval.id = strdup(yytext); return(IDENTIFIER); }
+{D}+"."{D}*({E})?{FS}?	{ count(); yylval.id = strdup(yytext); return(IDENTIFIER); }
 
 
 "->"			{ count(); return(NEXT); }

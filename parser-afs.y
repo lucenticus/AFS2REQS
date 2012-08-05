@@ -1,5 +1,5 @@
 %token BEGIN END NET CHAN ALL ANY FUN skip exit break wait read write
-%token SEQ PAR ALT LOOP
+%token SEQ PAR ALT LOOP IDENTIFIER TRUE FALSE BOOL  NEXT 
 
 %start translation_unit
 
@@ -14,9 +14,40 @@
     int	  tok;
 }
 %%
+
 pr      : NET can BEGIN fproc END 
+
 can     : CHAN IDENTIFIER ':' ':' type '('IDENTIFIER')' ':' type '(' IDENTIFIER ')' 
-        | 
+        | can ';' can
+
+type    : ALL | ANY
+
+fproc   : FUN IDENTIFIER ':' ':' c 
+	| fproc ';' fproc
+
+c       : a 
+	| skip
+	| exit
+	| break
+	| wait '(' IDENTIFIER ')'
+	| read '(' IDENTIFIER ',' IDENTIFIER ')'
+	| write '(' IDENTIFIER ',' IDENTIFIER ')'
+	| SEQ '(' c ')'
+	| SEQ '(' c ',' c ')'
+	| PAR '(' c ')'
+	| PAR '(' c ',' c ')'
+	| ALT '(' gc ')'
+	| LOOP '(' ALT '(' gc ')' ')'
+
+gc      : g NEXT c
+	| gc ';' gc
+
+g	: tt
+	| ff
+	| b
+	| wait '(' IDENTIFIER ')'
+	| read '(' IDENTIFIER ',' IDENTIFIER ')'
+	| write '(' IDENTIFIER ',' IDENTIFIER ')' 
 
 %%
 
