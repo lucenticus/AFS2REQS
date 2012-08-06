@@ -1,21 +1,23 @@
-%token BEGIN END NET CHAN ALL ANY FUN skip exit break wait read write
-%token SEQ PAR ALT LOOP IDENTIFIER TRUE FALSE BOOL  NEXT 
+%token BEG END NET CHAN ALL ANY FUN SKIP EXIT BREAK WAIT READ WRITE
+%token SEQ PAR ALT LOOP IDENTIFIER TRUE FALSE BOOL  NEXT COM
 
-%start translation_unit
+%start pr
 
 %{
 #include <stdio.h>
 #include "lex.yy.c"
 %}
 
+
 %union {
     struct ast *a;
     char *id;
     int	  tok;
 }
+
 %%
 
-pr      : NET can BEGIN fproc END 
+pr      : NET can BEG fproc END 
 
 can     : CHAN IDENTIFIER ':' ':' type '('IDENTIFIER')' ':' type '(' IDENTIFIER ')' 
         | can ';' can
@@ -25,13 +27,13 @@ type    : ALL | ANY
 fproc   : FUN IDENTIFIER ':' ':' c 
 	| fproc ';' fproc
 
-c       : a 
-	| skip
-	| exit
-	| break
-	| wait '(' IDENTIFIER ')'
-	| read '(' IDENTIFIER ',' IDENTIFIER ')'
-	| write '(' IDENTIFIER ',' IDENTIFIER ')'
+c       : COM 
+	| SKIP
+	| EXIT
+	| BREAK
+	| WAIT '(' IDENTIFIER ')'
+	| READ '(' IDENTIFIER ',' IDENTIFIER ')'
+	| WRITE '(' IDENTIFIER ',' IDENTIFIER ')'
 	| SEQ '(' c ')'
 	| SEQ '(' c ',' c ')'
 	| PAR '(' c ')'
@@ -42,12 +44,12 @@ c       : a
 gc      : g NEXT c
 	| gc ';' gc
 
-g	: tt
-	| ff
-	| b
-	| wait '(' IDENTIFIER ')'
-	| read '(' IDENTIFIER ',' IDENTIFIER ')'
-	| write '(' IDENTIFIER ',' IDENTIFIER ')' 
+g	: TRUE
+	| FALSE
+	| BOOL
+	| WAIT '(' IDENTIFIER ')'
+	| READ '(' IDENTIFIER ',' IDENTIFIER ')'
+	| WRITE '(' IDENTIFIER ',' IDENTIFIER ')' 
 
 %%
 
@@ -80,7 +82,7 @@ int main(int argc, char *argv[])
 	}
 	return 1;
 }
-yyerror(char *s)
+void yyerror(char *s)
 {
 	fflush(stdout);
 	fprintf(yyout, "\n%*s\n%*s\n", column, "^", column, s);
