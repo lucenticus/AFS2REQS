@@ -25,9 +25,11 @@ can     : CHAN IDENTIFIER ':' ':' type '('IDENTIFIER')' ':' type '(' IDENTIFIER 
 type    : ALL | ANY
 
 fproc   : FUN IDENTIFIER ':' ':' c 
-	| fproc ';' fproc
+	| FUN IDENTIFIER ':' ':' c  ';' fproc
 
 c       : COM 
+        | c ';'
+        | c ';' c
 	| SKIP
 	| EXIT
 	| BREAK
