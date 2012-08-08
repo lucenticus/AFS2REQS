@@ -18,40 +18,95 @@
 %%
 
 pr      : NET can BEG fproc END 
+	{ }
 
 can     : CHAN IDENTIFIER ':' ':' type '('IDENTIFIER')' ':' type '(' IDENTIFIER ')' 
-        | can ';' can
+	{ }
 
-type    : ALL | ANY
+        | can ';' can
+	{ }
+
+type    : ALL 
+	{ }
+	
+	| ANY 
+	{ }
+	
 
 fproc   : FUN IDENTIFIER ':' ':' c 
+	{ }
+
 	| FUN IDENTIFIER ':' ':' c  ';' fproc
+	{ }
 
 c       : COM 
-        | c ';'
-        | c ';' c
+	{ }
+
+	| c ';'
+	{ }
+
+	| c ';' c
+	{ }
+
 	| SKIP
+	{ }
+
 	| EXIT
+	{ }
+
 	| BREAK
+	{ }
+
 	| WAIT '(' IDENTIFIER ')'
+	{ }
+
 	| READ '(' IDENTIFIER ',' IDENTIFIER ')'
+	{ }
+
 	| WRITE '(' IDENTIFIER ',' IDENTIFIER ')'
+	{ }
+
 	| SEQ '(' c ')'
+	{ }
+
 	| SEQ '(' c ',' c ')'
+	{ }
+
 	| PAR '(' c ')'
+	{ }
+
 	| PAR '(' c ',' c ')'
+	{ }
+
 	| ALT '(' gc ')'
+	{ }
+
 	| LOOP '(' ALT '(' gc ')' ')'
+	{ }
 
 gc      : g NEXT c
+	{ }
+
 	| gc ';' gc
+	{ }
 
 g	: TRUE
+	{ }
+
 	| FALSE
+	{ }
+
 	| BOOL
+	{ }
+
 	| WAIT '(' IDENTIFIER ')'
+	{ }
+
 	| READ '(' IDENTIFIER ',' IDENTIFIER ')'
+	{ }
+
 	| WRITE '(' IDENTIFIER ',' IDENTIFIER ')' 
+	{ }
 
 %%
 
