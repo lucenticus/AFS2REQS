@@ -87,6 +87,32 @@ struct ast *new_id(char *id)
 	return ((struct ast *) a);
 }
 
+struct ast *new_chan(struct ast *chan_id, 
+		     struct ast *in_type, 
+		     struct ast *in_id, 
+		     struct ast *out_type, 
+		     struct ast *out_id) 
+{
+	struct term_chan *ch = malloc(sizeof(struct term_chan));
+	if (!ch) {
+		yyerror("out of memory");
+		exit(0);
+	}
+	ch->nodetype = NODE_CHAN;
+	ch->id = (struct term_id*) chan_id;
+
+	ch->in_id = (struct term_id*) in_id;
+	ch->in_type = in_type;
+
+	ch->out_id = (struct term_id*) out_id;
+	ch->out_type = out_type;
+
+	ch->l = NULL;
+	ch->r = NULL;
+
+	return ((struct ast *) ch);
+}
+
 void print_tree(struct ast *a) 
 {
 	if (a == NULL)

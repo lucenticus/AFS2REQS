@@ -5,12 +5,13 @@ E			[Ee][+-]?{D}+
 FS			(f|F|l|L)
 IS			(u|U|l|L)*
 %option noyywrap yylineno
-/*%x IFILE*/
+%x IFILE
 
 %{
 #include <stdio.h>
-#include "parser-afs.h"
 #include "parser-afs.tab.h"
+#include "parser-afs.h"
+
 %}
 %%
 
@@ -37,31 +38,31 @@ IS			(u|U|l|L)*
 "a"			{ count(); return (COM); }
 
 {L}({L}|{D})*		{
-				/*yylval.id = strdup(yytext);*/
+				yylval.id = strdup(yytext);
 				count(); 
 				return (IDENTIFIER);
 			}
 
-0[xX]{H}+{IS}?		{ count(); /*yylval.id = strdup(yytext);*/ return (IDENTIFIER); }
-0{D}+{IS}?		{ count(); /*yylval.id = strdup(yytext);*/ return (IDENTIFIER); }
-{D}+{IS}?		{ count(); /*yylval.id = strdup(yytext);*/ return (IDENTIFIER); }
-L?'(\\.|[^\\'])+'	{ count(); /*yylval.id = strdup(yytext);*/ return (IDENTIFIER); }
+0[xX]{H}+{IS}?		{ count(); yylval.id = strdup(yytext); return (IDENTIFIER); }
+0{D}+{IS}?		{ count(); yylval.id = strdup(yytext); return (IDENTIFIER); }
+{D}+{IS}?		{ count(); yylval.id = strdup(yytext); return (IDENTIFIER); }
+L?'(\\.|[^\\'])+'	{ count(); yylval.id = strdup(yytext); return (IDENTIFIER); }
 
-{D}+{E}{FS}?		{ count(); /*yylval.id = strdup(yytext);*/ return (IDENTIFIER); }
-{D}*"."{D}+({E})?{FS}?	{ count(); /*yylval.id = strdup(yytext);*/ return (IDENTIFIER); }
-{D}+"."{D}*({E})?{FS}?	{ count(); /*yylval.id = strdup(yytext);*/ return (IDENTIFIER); }
+{D}+{E}{FS}?		{ count(); yylval.id = strdup(yytext); return (IDENTIFIER); }
+{D}*"."{D}+({E})?{FS}?	{ count(); yylval.id = strdup(yytext); return (IDENTIFIER); }
+{D}+"."{D}*({E})?{FS}?	{ count(); yylval.id = strdup(yytext); return (IDENTIFIER); }
 
 
 "->"			{ count(); return(NEXT); }
-(";"|";;")		{ count(); /*yylval.tok = ';';*/ return(';'); }
-","			{ count(); /*yylval.tok = ',';*/ return(','); }
-":"			{ count(); /*yylval.tok = ':';*/ return(':'); }
-"="			{ count(); /*yylval.tok = '=';*/ return('='); }
-"("			{ count(); /*yylval.tok = '(';*/ return('('); }
-")"			{ count(); /*yylval.tok = ')';*/ return(')'); }
-"["                     { count(); /*yylval.tok = '[';*/ return('['); }
-"]"                     { count(); /*yylval.tok = ']';*/ return(']'); }
-"."			{ count(); /*yylval.tok = '.';*/ return('.'); }
+(";"|";;")		{ count(); yylval.tok = ';'; return(';'); }
+","			{ count(); yylval.tok = ','; return(','); }
+":"			{ count(); yylval.tok = ':'; return(':'); }
+"="			{ count(); yylval.tok = '='; return('='); }
+"("			{ count(); yylval.tok = '('; return('('); }
+")"			{ count(); yylval.tok = ')'; return(')'); }
+"["                     { count(); yylval.tok = '['; return('['); }
+"]"                     { count(); yylval.tok = ']'; return(']'); }
+"."			{ count(); yylval.tok = '.'; return('.'); }
 
 
 [ \t\v\n\f]		{ count (); }
