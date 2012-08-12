@@ -36,7 +36,13 @@ struct symbol {
 	struct ref *reflist;
 };
 
+struct proc_list {
+	struct ast *proc;
+	struct proc_list *next;
+};
+
 struct ast *root;
+struct proc_list *processes;
 
 struct symbol symtab[NHASH];
 
@@ -51,6 +57,8 @@ struct ast *new_chan(struct ast *chan_id,
 		     struct ast *out_type, 
 		     struct ast *out_id);
 void count();
+void calc_apriori_semantics(struct ast *r);
+
 enum NODETYPE {
 	NODE_ID,
 	NODE_CHAN_LIST,
@@ -62,6 +70,6 @@ enum NODETYPE {
 	NODE_GC_LIST,
 	NODE_GC,
 	NODE_PROGRAM,
-
 };
+
 #endif /*PARSER_AFS_H*/

@@ -11,7 +11,7 @@ void count()
 			column += 8 - (column % 8);
 		else
 			column++;
-	ECHO;
+	/*ECHO;*/
 }
 static unsigned symhash(char *sym) 
 {
@@ -121,7 +121,80 @@ void print_tree(struct ast *a)
 	if (a->nodetype == NODE_ID) {
 		if (((struct term_id *) a)->name != NULL)
 			printf("id:%s\n",((struct term_id *) a)->name);
+	} else if (a->nodetype == NODE_CHAN) {
+		struct term_chan * ch = (struct term_chan *) a;
+		if (ch->id != NULL)
+			print_tree((struct ast *)ch->id);
+		if (ch->in_id != NULL)
+			print_tree((struct ast *)ch->in_id);
+		if (ch->in_type != NULL)
+			print_tree(ch->in_type);
+		if (ch->out_id != NULL)
+			print_tree((struct ast *)ch->out_id);
+		if (ch->out_type != NULL)
+			print_tree(ch->out_type);
 	}
 	print_tree(a->l);
 	print_tree(a->r);
+}
+
+void search_processes(struct ast *a)
+{
+	if (a == NULL)
+		return;
+	if (a->nodetype == NODE_CHAN || a->nodetype == NODE_FUNC) {
+		struct proc_list *node = malloc(sizeof(struct proc_list));
+		if (!node) {
+			yyerror("out of memory");
+			exit(0);
+		}
+		node->proc = a;
+		node->next = NULL;
+		if (processes) {
+			node->next = processes;
+			processes = node;
+		} else {
+			processes = node;
+		}
+	}
+	search_processes(a->l);
+	search_processes(a->r);
+}
+
+void afs_to_sem(struct ast *a)
+{
+	if (a == NULL)
+		return;
+	if (a->nodetype == NODE_ID) {
+		/*if (((struct term_id *) a)->name != NULL)
+		  printf("id:%s\n",((struct term_id *) a)->name);*/
+	} else if (a->nodetype == NODE_CHAN) {
+		struct term_chan * ch = (struct term_chan *) a;
+		fprintf(yyout, "K_%s = (IN(", ch->id->name);
+		fprintf(yyout, "%s, %s) * ", 
+			ch->id->name, ch->in_id->name);
+		fprintf(yyout, "OUT(%s, %s))+", 
+			ch->id->name, ch->out_id->name);
+		fprintf(yyout, "\n");
+	} else if (a->nodetype == NODE_FUNC) {
+		fprintf(yyout, "P_%s = ", ((struct term_id *)a->l)->name);
+		afs_to_sem(a->l);
+		afs_to_sem(a->r);       
+		fprintf(yyout, "\n");
+		return;
+	}
+	afs_to_sem(a->l);
+	afs_to_sem(a->r);       
+}
+void calc_apriori_semantics(struct ast *r) 
+{
+	search_processes(r);
+	struct proc_list *tmp = processes;
+	
+	while (tmp) {
+		/*printf ("PROCESS: \n");
+		print_tree(tmp->proc);*/
+		afs_to_sem(tmp->proc);
+		tmp = tmp->next;
+	}
 }

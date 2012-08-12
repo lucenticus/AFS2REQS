@@ -1,7 +1,4 @@
-NET
-	CHAN fill :: ALL(1) : ALL(1)
-	CHAN empty :: ALL(1) : ALL(1)
-BEGIN
-	FUN test_write :: LOOP(ALT(b -> SEQ(write(empty, 1); read(fill, 1); )))
-	FUN test_read :: LOOP(ALT(tt -> SEQ(write(fill, 1); read(empty, 1); )))
-END
+P_test_read = 
+P_test_write = 
+K_empty = (IN(empty, 1) * OUT(empty, 1))+
+K_fill = (IN(fill, 1) * OUT(fill, 1))+

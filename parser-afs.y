@@ -22,7 +22,7 @@
 %%
 
 pr      : NET chan BEG fproc END 
-	{ $$ = new_ast(NODE_PROGRAM, $2, $4); }
+	{ root = new_ast(NODE_PROGRAM, $2, $4); }
 
 chan    : CHAN IDENTIFIER ':' ':' type '('IDENTIFIER')' ':' type '(' IDENTIFIER ')' 
 	{ $$ = new_chan(new_id($2), $5, new_id($7), $10, new_id($12)); }
@@ -137,7 +137,7 @@ int main(int argc, char *argv[])
 		yyin = in;
 		yyout = out;
 		yyparse();
-
+		calc_apriori_semantics(root);
 		fclose(in);
 		fclose(out);
 	}
