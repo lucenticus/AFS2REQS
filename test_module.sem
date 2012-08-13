@@ -1,4 +1,0 @@
-P_test_read = 
-P_test_write = 
-K_empty = (IN(empty, 1) * OUT(empty, 1))+
-K_fill = (IN(fill, 1) * OUT(fill, 1))+

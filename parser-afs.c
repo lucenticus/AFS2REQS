@@ -178,13 +178,63 @@ void afs_to_sem(struct ast *a)
 		fprintf(yyout, "\n");
 	} else if (a->nodetype == NODE_FUNC) {
 		fprintf(yyout, "P_%s = ", ((struct term_id *)a->l)->name);
-		afs_to_sem(a->l);
-		afs_to_sem(a->r);       
+		afs_to_sem(a->r);  
+		printf("PROC:");
+		print_tree(a->r);
 		fprintf(yyout, "\n");
-		return;
+	} else if (a->nodetype == COM) {
+		fprintf(yyout, "A");
+	} else if (a->nodetype == TRUE) {
+		fprintf(yyout, "T");
+	} else if (a->nodetype == FALSE) {
+		fprintf(yyout, "F");
+	} else if (a->nodetype == BOOL) {
+		fprintf(yyout, "B");
+	} else if (a->nodetype == SKIP) {
+		fprintf(yyout, "tau");
+	} else if (a->nodetype == EXIT) {
+		fprintf(yyout, "EXIT");
+	} else if (a->nodetype == BREAK) {
+		fprintf(yyout, "BREAK");
+	} else if (a->nodetype == WAIT) {
+		fprintf(yyout, "TIME");
+	} else if (a->nodetype == READ) {
+		fprintf(yyout, "IN");
+		fprintf(yyout, "(%s, %s)", 
+			((struct term_id *)a->l)->name, 
+			((struct term_id *)a->r)->name);
+	} else if (a->nodetype == WRITE) {
+		fprintf(yyout, "OUT");
+		fprintf(yyout, "(%s, %s)", 
+			((struct term_id *)a->l)->name, 
+			((struct term_id *)a->r)->name);
+	} else if (a->nodetype == SEQ) {
+		afs_to_sem(a->l);
+		fprintf(yyout, " * ");
+		afs_to_sem(a->r);       
+	} else if (a->nodetype == PAR) {
+		afs_to_sem(a->l);
+		fprintf(yyout, " U ");
+		afs_to_sem(a->r);       
+	} else if (a->nodetype == ALT) {
+		afs_to_sem(a->l);
+		if (a->r) {
+			fprintf(yyout, " + ");
+			afs_to_sem(a->r);       
+		}
+	} else if (a->nodetype == LOOP) {
+		fprintf(yyout, "(");
+		afs_to_sem(a->l);
+		fprintf(yyout, ")+");
+	} else if (a->nodetype == NODE_GC) {
+		afs_to_sem(a->l);
+		fprintf(yyout, " ^ ");
+		afs_to_sem(a->r); 
+	} else if (a->nodetype == NODE_GC_LIST) {
+		afs_to_sem(a->l);
+		fprintf(yyout, " + ");
+		afs_to_sem(a->r);       		
 	}
-	afs_to_sem(a->l);
-	afs_to_sem(a->r);       
 }
 void calc_apriori_semantics(struct ast *r) 
 {

@@ -27,66 +27,66 @@ pr      : NET chan BEG fproc END
 chan    : CHAN IDENTIFIER ':' ':' type '('IDENTIFIER')' ':' type '(' IDENTIFIER ')' 
 	{ $$ = new_chan(new_id($2), $5, new_id($7), $10, new_id($12)); }
 
-        | chan chan
-	{ $$ = new_ast(NODE_CHAN_LIST, $1, $2); }
+        | CHAN IDENTIFIER ':' ':' type '('IDENTIFIER')' ':' type '(' IDENTIFIER ')' chan
+	{ $$ = new_ast(NODE_CHAN_LIST, new_chan(new_id($2), $5, new_id($7), $10, new_id($12)), $14); }
 
 type    : ALL 
-	{ $$ = new_ast($1, NULL, NULL); }
+	{ $$ = new_ast(ALL, NULL, NULL); }
        
 	| ANY 
-	{ $$ = new_ast($1, NULL, NULL); }
+	{ $$ = new_ast(ANY, NULL, NULL); }
 	
 
 fproc   : FUN IDENTIFIER ':' ':' c
 	{ $$ = new_ast(NODE_FUNC, new_id($2), $5); }
 
-	| fproc fproc
-	{ $$ = new_ast(NODE_FUNC_LIST, $1, $2); }
+	| FUN IDENTIFIER ':' ':' c fproc
+	{ $$ = new_ast(NODE_FUNC_LIST, new_ast(NODE_FUNC, new_id($2), $5), $6); }
 
 c       : COM 
-	{ $$ = new_ast($1, NULL, NULL); }
+	{ $$ = new_ast(COM, NULL, NULL); }
 
-	| c ';'
+/*	| c ';'
 	{ $$ = new_ast(NODE_COM_LIST, $1, NULL); }
 
 	| c ';' c
-	{ $$ = new_ast(NODE_COM_LIST, $1, $3); }
+	{ $$ = new_ast(NODE_COM_LIST, $1, $3); } */
 
 	| SKIP
-	{ $$ = new_ast($1, NULL, NULL); }
+	{ $$ = new_ast(SKIP, NULL, NULL); }
 
 	| EXIT
-	{ $$ = new_ast($1, NULL, NULL); }
+	{ $$ = new_ast(EXIT, NULL, NULL); }
 
 	| BREAK
-	{ $$ = new_ast($1, NULL, NULL); }
+	{ $$ = new_ast(BREAK, NULL, NULL); }
 
 	| WAIT '(' IDENTIFIER ')'
-	{ $$ = new_ast($1, new_id($3), NULL); }
+	{ $$ = new_ast(WAIT, new_id($3), NULL); }
 
 	| READ '(' IDENTIFIER ',' IDENTIFIER ')'
-	{ $$ = new_ast($1, new_id($3), new_id($5)); }
+	{ $$ = new_ast(READ, new_id($3), new_id($5)); }
 
 	| WRITE '(' IDENTIFIER ',' IDENTIFIER ')'
-	{ $$ = new_ast($1, new_id($3), new_id($5)); }
+	{ $$ = new_ast(WRITE, new_id($3), new_id($5)); }
 
 	| SEQ '(' c ')'
-	{ $$ = new_ast($1, $3, NULL); }
+	{ $$ = new_ast(SEQ, $3, NULL); }
 
-	| SEQ '(' c ',' c ')'
-	{ $$ = new_ast($1, $3, $5); }
+	| SEQ '(' c ';' c ')'
+	{ $$ = new_ast(SEQ, $3, $5); }
 
 	| PAR '(' c ')'
-	{ $$ = new_ast($1, $3, NULL); }
+	{ $$ = new_ast(PAR, $3, NULL); }
 
-	| PAR '(' c ',' c ')'
-	{ $$ = new_ast($1, $3, $5); }
+	| PAR '(' c ';' c ')'
+	{ $$ = new_ast(PAR, $3, $5); }
 
-	| ALT '(' gc ')'
-	{ $$ = new_ast($1, $3, NULL); }
+	| ALT '(' gc ';' gc ')'
+	{ $$ = new_ast(ALT, $3, $5); }
 
 	| LOOP '(' ALT '(' gc ')' ')'
-	{ $$ = new_ast($1, $5, NULL); }
+	{ $$ = new_ast(LOOP, new_ast(ALT, $5, NULL), NULL); }
 
 gc      : g NEXT c
 	{ $$ = new_ast(NODE_GC, $1, $3); }
@@ -95,22 +95,22 @@ gc      : g NEXT c
 	{ $$ = new_ast(NODE_GC_LIST, $1, $3); }
 
 g	: TRUE
-	{ $$ = new_ast($1, NULL, NULL); }
+	{ $$ = new_ast(TRUE, NULL, NULL); }
 
 	| FALSE
-	{ $$ = new_ast($1, NULL, NULL); }
+	{ $$ = new_ast(FALSE, NULL, NULL); }
 
 	| BOOL
-	{ $$ = new_ast($1, NULL, NULL); }
+	{ $$ = new_ast(BOOL, NULL, NULL); }
 
 	| WAIT '(' IDENTIFIER ')'
-	{ $$ = new_ast($1, new_id($3), NULL); }
+	{ $$ = new_ast(WAIT, new_id($3), NULL); }
 
 	| READ '(' IDENTIFIER ',' IDENTIFIER ')'
-	{ $$ = new_ast($1, new_id($3), new_id($5)); }
+	{ $$ = new_ast(READ, new_id($3), new_id($5)); }
 
 	| WRITE '(' IDENTIFIER ',' IDENTIFIER ')' 
-	{ $$ = new_ast($1, new_id($3), new_id($5)); }
+	{ $$ = new_ast(WRITE, new_id($3), new_id($5)); }
 
 %%
 
