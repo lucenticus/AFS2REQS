@@ -161,90 +161,213 @@ void search_processes(struct ast *a)
 	search_processes(a->r);
 }
 
-void afs_to_sem(struct ast *a)
+struct ast* afs_to_sem(struct ast *a)
 {
 	if (a == NULL)
-		return;
+		return NULL;
 	if (a->nodetype == NODE_ID) {
 		/*if (((struct term_id *) a)->name != NULL)
 		  printf("id:%s\n",((struct term_id *) a)->name);*/
+		return a;
 	} else if (a->nodetype == NODE_CHAN) {
 		struct term_chan * ch = (struct term_chan *) a;
 		fprintf(yyout, "K_%s = (IN(", ch->id->name);
 		fprintf(yyout, "%s, %s) * ", 
 			ch->id->name, ch->in_id->name);
-		fprintf(yyout, "OUT(%s, %s))+", 
+		fprintf(yyout, "OUT(%s, %s))#", 
 			ch->id->name, ch->out_id->name);
 		fprintf(yyout, "\n");
+		struct ast *proc = malloc(sizeof(struct ast));
+		proc->nodetype = SEM_PROC;
+		proc->l = (struct ast*) ch->id;
+		struct ast *fix_op = malloc(sizeof(struct ast));
+		fix_op->nodetype = '#';
+		struct ast *comp_op = malloc(sizeof(struct ast));
+		comp_op->nodetype = '*';
+		struct ast *in = malloc(sizeof(struct ast));
+		in->nodetype = SEM_IN;
+		in->l = (struct ast*) ch->id;
+		in->r = (struct ast*) ch->in_id;
+
+		struct ast *out = malloc(sizeof(struct ast));
+		out->nodetype = SEM_OUT;
+		out->l = (struct ast*) ch->id;
+		out->r = (struct ast*) ch->out_id;
+		
+		comp_op->l = in;
+		comp_op->r = out;
+		fix_op->l = comp_op;
+		fix_op->r = NULL;
+		proc->r = fix_op;
+		return proc;
 	} else if (a->nodetype == NODE_FUNC) {
 		fprintf(yyout, "P_%s = ", ((struct term_id *)a->l)->name);
-		afs_to_sem(a->r);  
-		printf("PROC:");
-		print_tree(a->r);
+		struct ast *proc = malloc(sizeof(struct ast));
+		proc->nodetype = SEM_PROC;
+		proc->r = afs_to_sem(a->r); 
+		proc->l = a->l;
 		fprintf(yyout, "\n");
+		return proc;
 	} else if (a->nodetype == COM) {
 		fprintf(yyout, "A");
+		struct ast *com = malloc(sizeof(struct ast));
+		com->nodetype = SEM_COM;
+		com->l = NULL;
+		com->r = NULL;
+		return com;
 	} else if (a->nodetype == TRUE) {
 		fprintf(yyout, "T");
+		struct ast *t = malloc(sizeof(struct ast));
+		t->nodetype = SEM_T;
+		t->l = NULL;
+		t->r = NULL;
+		return t;
 	} else if (a->nodetype == FALSE) {
 		fprintf(yyout, "F");
+		struct ast *f = malloc(sizeof(struct ast));
+		f->nodetype = SEM_F;
+		f->l = NULL;
+		f->r = NULL;
+		return f;
 	} else if (a->nodetype == BOOL) {
 		fprintf(yyout, "B");
+		struct ast *b = malloc(sizeof(struct ast));
+		b->nodetype = SEM_B;
+		b->l = NULL;
+		b->r = NULL;
+		return b;
 	} else if (a->nodetype == SKIP) {
 		fprintf(yyout, "tau");
+		struct ast *tau = malloc(sizeof(struct ast));
+		tau->nodetype = SEM_TAU;
+		tau->l = NULL;
+		tau->r = NULL;
+		return tau;
 	} else if (a->nodetype == EXIT) {
 		fprintf(yyout, "EXIT");
+		struct ast *exit = malloc(sizeof(struct ast));
+		exit->nodetype = SEM_EXIT;
+		exit->l = NULL;
+		exit->r = NULL;
+		return exit;
 	} else if (a->nodetype == BREAK) {
 		fprintf(yyout, "BREAK");
+		struct ast *br = malloc(sizeof(struct ast));
+		br->nodetype = SEM_BREAK;
+		br->l = NULL;
+		br->r = NULL;
+		return br;
 	} else if (a->nodetype == WAIT) {
 		fprintf(yyout, "TIME");
+		struct ast *time = malloc(sizeof(struct ast));
+		time->nodetype = SEM_TIME;
+		time->l = NULL;
+		time->r = NULL;
+		return time;
 	} else if (a->nodetype == READ) {
 		fprintf(yyout, "IN");
 		fprintf(yyout, "(%s, %s)", 
 			((struct term_id *)a->l)->name, 
 			((struct term_id *)a->r)->name);
+		struct ast *in = malloc(sizeof(struct ast));
+		in->nodetype = SEM_IN;
+		in->l = a->l;
+		in->r = a->r;
+		return in;
 	} else if (a->nodetype == WRITE) {
 		fprintf(yyout, "OUT");
 		fprintf(yyout, "(%s, %s)", 
 			((struct term_id *)a->l)->name, 
 			((struct term_id *)a->r)->name);
+		struct ast *out = malloc(sizeof(struct ast));
+		out->nodetype = SEM_OUT;
+		out->l = a->l;
+		out->r = a->r;
+		return out;
 	} else if (a->nodetype == SEQ) {
-		afs_to_sem(a->l);
+		struct ast *comp_op = malloc(sizeof(struct ast));
+		comp_op->nodetype = '*';
+		comp_op->l = afs_to_sem(a->l);
 		fprintf(yyout, " * ");
-		afs_to_sem(a->r);       
+		comp_op->r = afs_to_sem(a->r);       
+		return comp_op;
 	} else if (a->nodetype == PAR) {
-		afs_to_sem(a->l);
+		struct ast *par_op = malloc(sizeof(struct ast));
+		par_op->nodetype = 'U';
+		par_op->l = afs_to_sem(a->l);
 		fprintf(yyout, " U ");
-		afs_to_sem(a->r);       
+		par_op->r = afs_to_sem(a->r);
+		return par_op;
 	} else if (a->nodetype == ALT) {
-		afs_to_sem(a->l);
+		struct ast *comp_op = malloc(sizeof(struct ast));
+		comp_op->nodetype = '+';
+		comp_op->l = afs_to_sem(a->l);
 		if (a->r) {
 			fprintf(yyout, " + ");
-			afs_to_sem(a->r);       
+			comp_op->l = afs_to_sem(a->r);       
 		}
+		return comp_op;
 	} else if (a->nodetype == LOOP) {
+		struct ast *fix_op = malloc(sizeof(struct ast));
+		fix_op->nodetype = '#';
 		fprintf(yyout, "(");
-		afs_to_sem(a->l);
-		fprintf(yyout, ")+");
+		fix_op->l = afs_to_sem(a->l);
+		fix_op->r = afs_to_sem(a->r);
+		fprintf(yyout, ")#");
+		return fix_op;
 	} else if (a->nodetype == NODE_GC) {
-		afs_to_sem(a->l);
+		struct ast *comp_op = malloc(sizeof(struct ast));
+		comp_op->nodetype = '^';
+		comp_op->l = afs_to_sem(a->l);
 		fprintf(yyout, " ^ ");
-		afs_to_sem(a->r); 
+		comp_op->r =afs_to_sem(a->r); 
+		return comp_op;
 	} else if (a->nodetype == NODE_GC_LIST) {
-		afs_to_sem(a->l);
+		struct ast *comp_op = malloc(sizeof(struct ast));
+		comp_op->nodetype = '+';
+		comp_op->l = afs_to_sem(a->l);
 		fprintf(yyout, " + ");
-		afs_to_sem(a->r);       		
+		comp_op->r = afs_to_sem(a->r);       		
+		return comp_op;
 	}
 }
 void calc_apriori_semantics(struct ast *r) 
 {
 	search_processes(r);
 	struct proc_list *tmp = processes;
-	
+	sem_processes = NULL;
 	while (tmp) {
-		/*printf ("PROCESS: \n");
-		print_tree(tmp->proc);*/
-		afs_to_sem(tmp->proc);
+		struct ast *sem_proc = afs_to_sem(tmp->proc);
+		struct proc_list *proc = malloc(sizeof(struct proc_list));
+		proc->proc = sem_proc;
+		proc->next = sem_processes;
+		sem_processes = proc;
 		tmp = tmp->next;
 	}
+	/*tmp = sem_processes;
+	while (tmp) {
+		print_tree(tmp->proc);
+		tmp = tmp->next;
+	}*/
+	
+	tmp = sem_processes;
+	sem_root = NULL;
+	while (tmp) {
+		if (!sem_root && tmp->next) {
+			struct ast *proc = malloc(sizeof(struct ast));
+			proc->nodetype = SEM_PAR;
+			proc->r = tmp->proc;
+			proc->l = tmp->next->proc;
+			sem_root = proc;
+			tmp = tmp->next->next;
+		} else if (sem_root) {
+			struct ast *proc = malloc(sizeof(struct ast));
+			proc->nodetype = SEM_PAR;
+			proc->r = sem_root;
+			proc->l = tmp->proc;
+			sem_root = proc;
+			tmp = tmp->next;
+		}
+	}
+	print_tree(sem_root);
 }

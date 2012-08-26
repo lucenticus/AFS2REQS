@@ -42,8 +42,9 @@ struct proc_list {
 };
 
 struct ast *root;
+struct ast *sem_root;
 struct proc_list *processes;
-
+struct proc_list *sem_processes;
 struct symbol symtab[NHASH];
 
 struct symbol *lookup(char*);
@@ -60,7 +61,7 @@ void count();
 void calc_apriori_semantics(struct ast *r);
 
 enum NODETYPE {
-	NODE_ID,
+	NODE_ID = 1000,
 	NODE_CHAN_LIST,
 	NODE_CHAN,
 	NODE_COM_LIST,
@@ -70,6 +71,18 @@ enum NODETYPE {
 	NODE_GC_LIST,
 	NODE_GC,
 	NODE_PROGRAM,
+	SEM_PROC,
+	SEM_IN,
+	SEM_OUT,
+	SEM_TIME,
+	SEM_BREAK,
+	SEM_EXIT,
+	SEM_TAU,
+	SEM_B,
+	SEM_F,
+	SEM_T,
+	SEM_COM,
+	SEM_PAR
 };
 
 #endif /*PARSER_AFS_H*/
