@@ -357,6 +357,48 @@ void proc_sem_to_par_comp()
 	}
 	/*print_tree(sem_root);*/
 }
+void convert_par_composition(struct ast *a, struct ast *parent) 
+{
+	if (a == NULL)
+		return;
+
+	if (a->nodetype == SEM_PAR) {
+		struct ast *add1 = malloc(sizeof(struct ast));
+		add1->nodetype = '+';
+
+		struct ast *parll1 = malloc(sizeof(struct ast));
+		parll1->nodetype = SEM_PARLL;
+		parll1->l = a->l;
+		parll1->r = a->r;
+		
+		add1->l = parll1;
+
+		struct ast *add2 = malloc(sizeof(struct ast));
+		add2->nodetype = '+';
+		
+		struct ast *parll2 = malloc(sizeof(struct ast));
+		parll2->nodetype = SEM_PARLL;
+		parll2->l = a->r;
+		parll2->r = a->l;
+		
+		struct ast *parl = malloc(sizeof(struct ast));
+		parl->nodetype = '|';
+		parl->l = a->l;
+		parl->r = a->r;
+		
+		add2->l = parll2;
+		add2->r = parl;
+		
+		add1->r = add2;
+				
+		a->nodetype = add1->nodetype;		
+		a->l = add1->l;
+		a->r = add1->r;
+	}
+	convert_par_composition(a->l, a);
+	convert_par_composition(a->r, a);
+}
+
 void convert_min_fixed_point(struct ast *a, struct ast *curr_proc) 
 {
 	if (a == NULL)
@@ -440,6 +482,9 @@ void calc_apriori_semantics(struct ast *r)
 	fprintf(yyout, "\nP = ");
 	print_sem_equation(sem_root);
 	convert_min_fixed_point(sem_root, NULL);
+	fprintf(yyout, " = \n = ");
+	print_sem_equation(sem_root);	
+	convert_par_composition(sem_root, NULL); 
 	fprintf(yyout, " = \n = ");
 	print_sem_equation(sem_root);	
 }
@@ -528,7 +573,11 @@ void print_sem_equation(struct ast *a)
 		print_sem_equation(a->r);
 	} else if (a->nodetype == SEM_PAR) {
 		print_sem_equation(a->l);
-		fprintf(yyout, " || ");
+		fprintf(yyout, " || \n || ");
+		print_sem_equation(a->r);
+	} else if (a->nodetype == SEM_PARLL) {
+		print_sem_equation(a->l);
+		fprintf(yyout, " LL \n LL ");
 		print_sem_equation(a->r);
 	} else if (a->nodetype == '#') {
 		fprintf(yyout, "(");
@@ -536,10 +585,14 @@ void print_sem_equation(struct ast *a)
 		print_sem_equation(a->r);
 		fprintf(yyout, ")");
 		fprintf(yyout, "%c", a->nodetype);
+	} else if (a->nodetype == '|') {
+		print_sem_equation(a->l);
+		fprintf(yyout, " %c \n %c ", a->nodetype, a->nodetype);
+		print_sem_equation(a->r);
 	} else if (a->nodetype == '+' ||
 		   a->nodetype == '^' ||
 		   a->nodetype == '*' ||
-		   a->nodetype == 'U') {
+		   a->nodetype == 'U' ) {
 		print_sem_equation(a->l);
 		fprintf(yyout, " %c ", a->nodetype);
 		print_sem_equation(a->r);

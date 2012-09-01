@@ -28,7 +28,8 @@ enum NODETYPE {
 	SEM_F,
 	SEM_T,
 	SEM_COM,         
-	SEM_PAR          
+	SEM_PAR,
+	SEM_PARLL
 };
 
 struct ast {
@@ -93,4 +94,5 @@ struct ast* afs_to_sem(struct ast *a);
 void print_tree(struct ast *a);
 void print_sem_equation(struct ast *a);
 void convert_min_fixed_point(struct ast *a, struct ast *curr_proc);
+void convert_par_composition(struct ast *a, struct ast *parent);
 #endif /*PARSER_AFS_H*/
