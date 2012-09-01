@@ -2,3 +2,5 @@ afs2reqs
 lex.yy.c
 parser-afs.tab.c
 parser-afs.tab.h
+parser-afs.output
+test_module.sem

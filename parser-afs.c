@@ -300,11 +300,15 @@ struct ast* afs_to_sem(struct ast *a)
 		return par_op;
 	} else if (a->nodetype == ALT) {
 		struct ast *comp_op = malloc(sizeof(struct ast));
-		comp_op->nodetype = '+';
-		comp_op->l = afs_to_sem(a->l);
+
+		
 		if (a->r) {
+			comp_op->nodetype = '+';
+			comp_op->l = afs_to_sem(a->l);
 			fprintf(yyout, " + ");
 			comp_op->l = afs_to_sem(a->r);       
+		} else {
+			comp_op = afs_to_sem(a->l);
 		}
 		return comp_op;
 	} else if (a->nodetype == LOOP) {
@@ -331,26 +335,10 @@ struct ast* afs_to_sem(struct ast *a)
 		return comp_op;
 	}
 }
-void calc_apriori_semantics(struct ast *r) 
+
+void proc_sem_to_par_comp()
 {
-	search_processes(r);
-	struct proc_list *tmp = processes;
-	sem_processes = NULL;
-	while (tmp) {
-		struct ast *sem_proc = afs_to_sem(tmp->proc);
-		struct proc_list *proc = malloc(sizeof(struct proc_list));
-		proc->proc = sem_proc;
-		proc->next = sem_processes;
-		sem_processes = proc;
-		tmp = tmp->next;
-	}
-	/*tmp = sem_processes;
-	while (tmp) {
-		print_tree(tmp->proc);
-		tmp = tmp->next;
-	}*/
-	
-	tmp = sem_processes;
+	struct proc_list *tmp = sem_processes;
 	sem_root = NULL;
 	while (tmp) {
 		if (!sem_root && tmp->next) {
@@ -369,5 +357,104 @@ void calc_apriori_semantics(struct ast *r)
 			tmp = tmp->next;
 		}
 	}
-	print_tree(sem_root);
+	/*print_tree(sem_root);*/
+}
+void calc_apriori_semantics(struct ast *r) 
+{
+	search_processes(r);
+	struct proc_list *tmp = processes;
+	sem_processes = NULL;
+	while (tmp) {
+		struct ast *sem_proc = afs_to_sem(tmp->proc);
+		struct proc_list *proc = malloc(sizeof(struct proc_list));
+		proc->proc = sem_proc;
+		proc->next = sem_processes;
+		sem_processes = proc;
+		tmp = tmp->next;
+	} 
+	proc_sem_to_par_comp();
+	/*print_tree(sem_root);*/
+	fprintf(yyout, "\nP = ");
+	print_sem_equation(sem_root);
+}
+
+void print_sem_equation(struct ast *a) 
+{
+	if (a == NULL)
+		return;
+
+	if (a->nodetype == NODE_ID) {
+		if (((struct term_id *) a)->name != NULL)
+			fprintf(yyout, "%s",((struct term_id *) a)->name);
+	} else if (a->nodetype == SEM_PROC) {
+		fprintf(yyout, "(");
+		/*print_sem_equation(a->l);*/
+		print_sem_equation(a->r);
+		fprintf(yyout, ")");
+	} else if (a->nodetype == SEM_IN) {
+		fprintf(yyout, "IN");
+		fprintf(yyout, "(");
+		print_sem_equation(a->l);
+		fprintf(yyout, ", ");
+		print_sem_equation(a->r);
+		fprintf(yyout, ")");
+	} else if (a->nodetype == SEM_OUT) {
+		fprintf(yyout, "OUT");
+		fprintf(yyout, "(");
+		print_sem_equation(a->l);
+		fprintf(yyout, ", ");
+		print_sem_equation(a->r);
+		fprintf(yyout, ")");
+	} else if (a->nodetype == SEM_TIME) {
+		fprintf(yyout, "TIME");
+		print_sem_equation(a->l);
+		print_sem_equation(a->r);
+	} else if (a->nodetype == SEM_BREAK) {
+		fprintf(yyout, "BREAK");
+		print_sem_equation(a->l);
+		print_sem_equation(a->r);
+	} else if (a->nodetype == SEM_EXIT) {
+		fprintf(yyout, "EXIT");
+		print_sem_equation(a->l);
+		print_sem_equation(a->r);
+	} else if (a->nodetype == SEM_TAU) {
+		fprintf(yyout, "tau");
+		print_sem_equation(a->l);
+		print_sem_equation(a->r);
+	} else if (a->nodetype == SEM_B) {
+		fprintf(yyout, "B");
+		print_sem_equation(a->l);
+		print_sem_equation(a->r);
+	} else if (a->nodetype == SEM_F) {
+		fprintf(yyout, "F");
+		print_sem_equation(a->l);
+		print_sem_equation(a->r);
+	} else if (a->nodetype == SEM_T) {
+		fprintf(yyout, "T");
+		print_sem_equation(a->l);
+		print_sem_equation(a->r);
+	} else if (a->nodetype == SEM_COM) {
+		fprintf(yyout, "A");
+		print_sem_equation(a->l);
+		print_sem_equation(a->r);
+	} else if (a->nodetype == SEM_PAR) {
+		print_sem_equation(a->l);
+		fprintf(yyout, "||");
+		print_sem_equation(a->r);
+	} else if (a->nodetype == '#') {
+		fprintf(yyout, "(");
+		print_sem_equation(a->l);
+		print_sem_equation(a->r);
+		fprintf(yyout, ")");
+		fprintf(yyout, "%c", a->nodetype);
+	} else if (a->nodetype == '+' ||
+		   a->nodetype == '^' ||
+		   a->nodetype == '*' ||
+		   a->nodetype == 'U') {
+		print_sem_equation(a->l);
+		fprintf(yyout, "%c", a->nodetype);
+		print_sem_equation(a->r);
+	}
+
+
 }

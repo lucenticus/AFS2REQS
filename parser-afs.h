@@ -3,6 +3,31 @@
 
 #define NHASH (9997)
 
+enum NODETYPE {
+	NODE_ID = 1000,
+	NODE_CHAN_LIST,
+	NODE_CHAN,
+	NODE_COM_LIST,
+	NODE_COM,
+	NODE_FUNC_LIST,   /*5*/
+	NODE_FUNC,
+	NODE_GC_LIST,
+	NODE_GC,
+	NODE_PROGRAM,
+	SEM_PROC,        /*10*/
+	SEM_IN,
+	SEM_OUT,
+	SEM_TIME,
+	SEM_BREAK,
+	SEM_EXIT,        /*15*/
+	SEM_TAU,
+	SEM_B,
+	SEM_F,
+	SEM_T,
+	SEM_COM,         /*20*/
+	SEM_PAR
+};
+
 struct ast {
 	int nodetype;
 	struct ast *l;
@@ -59,30 +84,9 @@ struct ast *new_chan(struct ast *chan_id,
 		     struct ast *out_id);
 void count();
 void calc_apriori_semantics(struct ast *r);
-
-enum NODETYPE {
-	NODE_ID = 1000,
-	NODE_CHAN_LIST,
-	NODE_CHAN,
-	NODE_COM_LIST,
-	NODE_COM,
-	NODE_FUNC_LIST,
-	NODE_FUNC,
-	NODE_GC_LIST,
-	NODE_GC,
-	NODE_PROGRAM,
-	SEM_PROC,
-	SEM_IN,
-	SEM_OUT,
-	SEM_TIME,
-	SEM_BREAK,
-	SEM_EXIT,
-	SEM_TAU,
-	SEM_B,
-	SEM_F,
-	SEM_T,
-	SEM_COM,
-	SEM_PAR
-};
-
+void proc_sem_to_par_comp();
+void search_processes(struct ast *a);
+struct ast* afs_to_sem(struct ast *a);
+void print_tree(struct ast *a);
+void print_sem_equation(struct ast *a);
 #endif /*PARSER_AFS_H*/
