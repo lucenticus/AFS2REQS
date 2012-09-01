@@ -15,19 +15,20 @@ enum NODETYPE {
 	NODE_GC,
 	NODE_PROGRAM,
 	SEM_PROC,        /*10*/
+	SEM_CPROC,
 	SEM_IN,
 	SEM_OUT,
 	SEM_CIN,
-	SEM_COUT,
+	SEM_COUT,        /*15*/
 	SEM_TIME,
 	SEM_BREAK,
-	SEM_EXIT,        /*15*/
+	SEM_EXIT,        
 	SEM_TAU,
-	SEM_B,
+	SEM_B,           /*20*/
 	SEM_F,
 	SEM_T,
-	SEM_COM,         /*20*/
-	SEM_PAR
+	SEM_COM,         
+	SEM_PAR          
 };
 
 struct ast {
@@ -91,4 +92,5 @@ void search_processes(struct ast *a);
 struct ast* afs_to_sem(struct ast *a);
 void print_tree(struct ast *a);
 void print_sem_equation(struct ast *a);
+void convert_min_fixed_point(struct ast *a, struct ast *curr_proc);
 #endif /*PARSER_AFS_H*/

@@ -178,7 +178,7 @@ struct ast* afs_to_sem(struct ast *a)
 			ch->id->name, ch->out_id->name);
 		fprintf(yyout, "\n");
 		struct ast *proc = malloc(sizeof(struct ast));
-		proc->nodetype = SEM_PROC;
+		proc->nodetype = SEM_CPROC;
 		proc->l = (struct ast*) ch->id;
 		struct ast *fix_op = malloc(sizeof(struct ast));
 		fix_op->nodetype = '#';
@@ -300,8 +300,6 @@ struct ast* afs_to_sem(struct ast *a)
 		return par_op;
 	} else if (a->nodetype == ALT) {
 		struct ast *comp_op = malloc(sizeof(struct ast));
-
-		
 		if (a->r) {
 			comp_op->nodetype = '+';
 			comp_op->l = afs_to_sem(a->l);
@@ -359,6 +357,71 @@ void proc_sem_to_par_comp()
 	}
 	/*print_tree(sem_root);*/
 }
+void convert_min_fixed_point(struct ast *a, struct ast *curr_proc) 
+{
+	if (a == NULL)
+		return;
+	if (a->nodetype == SEM_PROC ||
+	    a->nodetype == SEM_CPROC) {
+		curr_proc = a;
+	} else if (a->nodetype == '#') {
+		if(a->l != NULL && a->l->nodetype == '^') {
+			if (a->l->l != NULL && 
+			    a->l->l->nodetype == SEM_B) {
+				struct ast *comp = malloc(sizeof(struct ast));
+				comp->nodetype = '^';
+				struct ast *T = malloc(sizeof(struct ast));
+				T->nodetype = SEM_T;
+				T->l = NULL;
+				T->r = NULL;
+				struct ast *tau = malloc(sizeof(struct ast));
+				tau->nodetype = SEM_TAU;
+				tau->l = NULL;
+				tau->r = NULL;
+				comp->l = T;
+				comp->r = tau;
+				a->r = comp;
+				a->nodetype = '+';
+			       
+			} 
+			struct ast *tmp = a->l->r;
+			while (tmp->r != NULL && 
+			       (tmp->r->nodetype == '*' || 
+				tmp->r->nodetype == '+' || 
+				tmp->r->nodetype == '^')) {
+				tmp = tmp->r;					
+			} 
+			if (tmp == NULL) {
+				printf("\nERROR in convert_min_fixed_point: can't find right operand");
+				return;
+			}
+			struct ast * proc_comp = malloc(sizeof(struct ast));
+			proc_comp->nodetype = '*';
+			proc_comp->l = tmp->r;
+			struct ast * proc = malloc(sizeof(struct ast));
+			proc->nodetype = curr_proc->nodetype;
+			proc->l = curr_proc->l;
+			proc->r = NULL;
+			proc_comp->r = proc;
+			tmp->r = proc_comp;
+		} else if (a->l != NULL) {			
+			struct ast * proc = malloc(sizeof(struct ast));
+			proc->nodetype = curr_proc->nodetype;
+			proc->l = curr_proc->l;
+
+			proc->r = NULL;
+			a->r = proc;
+			a->nodetype = '*';
+		}
+		if (a->nodetype == '#') {
+			a->nodetype = a->l->nodetype;
+			a->r = a->l->r;
+			a->l = a->l->l;
+		}
+	}
+	convert_min_fixed_point(a->l, curr_proc);
+	convert_min_fixed_point(a->r, curr_proc);
+}
 void calc_apriori_semantics(struct ast *r) 
 {
 	search_processes(r);
@@ -376,6 +439,9 @@ void calc_apriori_semantics(struct ast *r)
 	/*print_tree(sem_root);*/
 	fprintf(yyout, "\nP = ");
 	print_sem_equation(sem_root);
+	convert_min_fixed_point(sem_root, NULL);
+	fprintf(yyout, " = \n = ");
+	print_sem_equation(sem_root);	
 }
 
 void print_sem_equation(struct ast *a) 
@@ -386,11 +452,20 @@ void print_sem_equation(struct ast *a)
 	if (a->nodetype == NODE_ID) {
 		if (((struct term_id *) a)->name != NULL)
 			fprintf(yyout, "%s",((struct term_id *) a)->name);
-	} else if (a->nodetype == SEM_PROC) {
-		fprintf(yyout, "(");
-		/*print_sem_equation(a->l);*/
-		print_sem_equation(a->r);
-		fprintf(yyout, ")");
+	} else if (a->nodetype == SEM_PROC ||
+		   a->nodetype == SEM_CPROC) {
+		if (a->r == NULL) {
+			if (a->nodetype == SEM_PROC) {
+				fprintf(yyout, "P_%s", ((struct term_id*)a->l)->name);
+			} else {
+				fprintf(yyout, "K_%s", ((struct term_id*)a->l)->name);
+			}
+		} else {
+			fprintf(yyout, "(");
+			/*print_sem_equation(a->l);*/
+			print_sem_equation(a->r);
+			fprintf(yyout, ")");
+		}
 	} else if (a->nodetype == SEM_IN) {
 		fprintf(yyout, "IN");
 		fprintf(yyout, "(");
@@ -453,7 +528,7 @@ void print_sem_equation(struct ast *a)
 		print_sem_equation(a->r);
 	} else if (a->nodetype == SEM_PAR) {
 		print_sem_equation(a->l);
-		fprintf(yyout, "||");
+		fprintf(yyout, " || ");
 		print_sem_equation(a->r);
 	} else if (a->nodetype == '#') {
 		fprintf(yyout, "(");
@@ -466,7 +541,7 @@ void print_sem_equation(struct ast *a)
 		   a->nodetype == '*' ||
 		   a->nodetype == 'U') {
 		print_sem_equation(a->l);
-		fprintf(yyout, "%c", a->nodetype);
+		fprintf(yyout, " %c ", a->nodetype);
 		print_sem_equation(a->r);
 	}
 
