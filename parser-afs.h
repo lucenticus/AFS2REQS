@@ -17,6 +17,8 @@ enum NODETYPE {
 	SEM_PROC,        /*10*/
 	SEM_IN,
 	SEM_OUT,
+	SEM_CIN,
+	SEM_COUT,
 	SEM_TIME,
 	SEM_BREAK,
 	SEM_EXIT,        /*15*/

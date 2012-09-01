@@ -171,10 +171,10 @@ struct ast* afs_to_sem(struct ast *a)
 		return a;
 	} else if (a->nodetype == NODE_CHAN) {
 		struct term_chan * ch = (struct term_chan *) a;
-		fprintf(yyout, "K_%s = (IN(", ch->id->name);
-		fprintf(yyout, "%s, %s) * ", 
+		fprintf(yyout, "K_%s = (IN{", ch->id->name);
+		fprintf(yyout, "%s, %s} * ", 
 			ch->id->name, ch->in_id->name);
-		fprintf(yyout, "OUT(%s, %s))#", 
+		fprintf(yyout, "OUT{%s, %s})#", 
 			ch->id->name, ch->out_id->name);
 		fprintf(yyout, "\n");
 		struct ast *proc = malloc(sizeof(struct ast));
@@ -185,12 +185,12 @@ struct ast* afs_to_sem(struct ast *a)
 		struct ast *comp_op = malloc(sizeof(struct ast));
 		comp_op->nodetype = '*';
 		struct ast *in = malloc(sizeof(struct ast));
-		in->nodetype = SEM_IN;
+		in->nodetype = SEM_CIN;
 		in->l = (struct ast*) ch->id;
 		in->r = (struct ast*) ch->in_id;
 
 		struct ast *out = malloc(sizeof(struct ast));
-		out->nodetype = SEM_OUT;
+		out->nodetype = SEM_COUT;
 		out->l = (struct ast*) ch->id;
 		out->r = (struct ast*) ch->out_id;
 		
@@ -405,6 +405,20 @@ void print_sem_equation(struct ast *a)
 		fprintf(yyout, ", ");
 		print_sem_equation(a->r);
 		fprintf(yyout, ")");
+	} else if (a->nodetype == SEM_CIN) {
+		fprintf(yyout, "IN");
+		fprintf(yyout, "{");
+		print_sem_equation(a->l);
+		fprintf(yyout, ", ");
+		print_sem_equation(a->r);
+		fprintf(yyout, "}");
+	} else if (a->nodetype == SEM_COUT) {
+		fprintf(yyout, "OUT");
+		fprintf(yyout, "{");
+		print_sem_equation(a->l);
+		fprintf(yyout, ", ");
+		print_sem_equation(a->r);
+		fprintf(yyout, "}");
 	} else if (a->nodetype == SEM_TIME) {
 		fprintf(yyout, "TIME");
 		print_sem_equation(a->l);
