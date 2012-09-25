@@ -209,10 +209,10 @@ struct ast* afs_to_sem(struct ast *a)
 		fprintf(yyout, "\n");
 		return proc;
 	} else if (a->nodetype == COM) {
-		fprintf(yyout, "A");
+		fprintf(yyout, "A_%s", ((struct term_id *)a->l)->name);
 		struct ast *com = malloc(sizeof(struct ast));
 		com->nodetype = SEM_COM;
-		com->l = NULL;
+		com->l = a->l;
 		com->r = NULL;
 		return com;
 	} else if (a->nodetype == TRUE) {

@@ -43,8 +43,8 @@ fproc   : FUN IDENTIFIER ':' ':' c
 	| FUN IDENTIFIER ':' ':' c fproc
 	{ $$ = new_ast(NODE_FUNC_LIST, new_ast(NODE_FUNC, new_id($2), $5), $6); }
 
-c       : COM 
-	{ $$ = new_ast(COM, NULL, NULL); }
+c       : COM '(' IDENTIFIER ')'
+	{ $$ = new_ast(COM, new_id($3), NULL); }
 
 /*	| c ';'
 	{ $$ = new_ast(NODE_COM_LIST, $1, NULL); }

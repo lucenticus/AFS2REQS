@@ -1,0 +1,6 @@
+NET
+	CHAN 1 :: ALL(1) : ALL(1)
+BEGIN
+	FUN 2 :: LOOP(ALT(b -> SEQ(write(1,1); a(1))))
+	FUN 3 :: LOOP(ALT(read(1, 1) -> a(2)))
+END
