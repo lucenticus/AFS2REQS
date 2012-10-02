@@ -171,10 +171,10 @@ struct ast* afs_to_sem(struct ast *a)
 		return a;
 	} else if (a->nodetype == NODE_CHAN) {
 		struct term_chan * ch = (struct term_chan *) a;
-		fprintf(yyout, "K_%s = (IN{", ch->id->name);
-		fprintf(yyout, "%s, %s} * ", 
+		fprintf(yyout, "K_%s = (CIN(", ch->id->name);
+		fprintf(yyout, "%s, %s) * ", 
 			ch->id->name, ch->in_id->name);
-		fprintf(yyout, "OUT{%s, %s})#", 
+		fprintf(yyout, "COUT(%s, %s))#", 
 			ch->id->name, ch->out_id->name);
 		fprintf(yyout, "\n");
 		struct ast *proc = malloc(sizeof(struct ast));
@@ -357,10 +357,87 @@ void proc_sem_to_par_comp()
 	}
 	/*print_tree(sem_root);*/
 }
-void convert_par_composition(struct ast *a, struct ast *parent) 
+
+int apply_distributive_law(struct ast *a, struct ast *parent) 
 {
 	if (a == NULL)
-		return;
+		return 0;
+	if (a->nodetype == SEM_PARLL ||
+	    a->nodetype == '|') {
+		if (a->l && a->l->nodetype == '+') {
+			struct ast *tmp = a->l;
+			do {
+				struct ast *par = malloc(sizeof(struct ast));
+				par->nodetype = a->nodetype;
+				par->l = tmp->l;
+				par->r = a->r;
+				tmp->l = par;
+				if (tmp->r->nodetype  != '+') {
+					struct ast *par2 = malloc(sizeof(struct ast));
+					par2->nodetype = a->nodetype;
+					par2->l = tmp->r;
+					par2->r = a->r;
+					tmp->r = par2;
+				}
+				tmp = tmp->r;
+			} while (tmp->nodetype == '+');
+			if (parent != NULL) {
+				if (parent->l == a){
+					parent->l->nodetype = a->l->nodetype;
+					parent->l->l = a->l->l;
+					parent->l->r = a->l->r;
+				} else {
+					parent->r->nodetype = a->l->nodetype;
+					parent->r->l = a->l->l;
+					parent->r->r = a->l->r;
+
+				}
+			} else {
+				sem_root = a->l;
+			}
+			a = a->l;
+		} else if (a->r && a->r->nodetype == '+') {
+			struct ast *tmp = a->r;
+			do {
+				struct ast *par = malloc(sizeof(struct ast));
+				par->nodetype = a->nodetype;
+				par->l = a->l;
+				par->r = tmp->l;
+				tmp->l = par;
+				if (tmp->r->nodetype  != '+') {
+					struct ast *par2 = malloc(sizeof(struct ast));
+					par2->nodetype = a->nodetype;
+					par2->l = a->l;
+					par2->r = tmp->r;
+					tmp->r = par2;
+				}
+				tmp = tmp->r;		
+			} while (tmp->nodetype == '+');
+			if (parent != NULL) {
+				if (parent->l == a) {
+					parent->l->nodetype = a->r->nodetype;
+					parent->l->l = a->r->l;
+					parent->l->r = a->r->r;
+				} else {
+					parent->r->nodetype = a->r->nodetype;
+					parent->r->l = a->r->l;
+					parent->r->r = a->r->r;
+				}
+			} else {
+				sem_root = a->r;
+			}
+			a = a->r;
+		}
+	}
+
+	apply_distributive_law(a, a->l); 
+	apply_distributive_law(a, a->r); 
+	return 0;
+}
+int convert_par_composition(struct ast *a, struct ast *parent) 
+{
+	if (a == NULL)
+		return 0;
 
 	if (a->nodetype == SEM_PAR) {
 		struct ast *add1 = malloc(sizeof(struct ast));
@@ -391,12 +468,27 @@ void convert_par_composition(struct ast *a, struct ast *parent)
 		
 		add1->r = add2;
 				
-		a->nodetype = add1->nodetype;		
-		a->l = add1->l;
-		a->r = add1->r;
+		if (a->r && a->r->nodetype == SEM_PAR) {
+			parll1->r = a->r->l;
+			parll2->l = a->r->l;
+			parl->r = a->r->l;
+			a->nodetype = a->r->nodetype;		
+			a->l = add1;
+			a->r = a->r->r;
+		} else {			
+			a->nodetype = add1->nodetype;		
+			a->l = add1->l;
+			a->r = add1->r;
+		}
+		return 1;
+	} else {
+		int retval = 0;
+		if ((retval = convert_par_composition(a->l, a)) != 0)
+			return retval;
+		if ((retval = convert_par_composition(a->l, a)) != 0)
+			return retval;
 	}
-	convert_par_composition(a->l, a);
-	convert_par_composition(a->r, a);
+	return 0;
 }
 
 void convert_min_fixed_point(struct ast *a, struct ast *curr_proc) 
@@ -461,7 +553,7 @@ void convert_min_fixed_point(struct ast *a, struct ast *curr_proc)
 			a->l = a->l->l;
 		}
 	}
-	convert_min_fixed_point(a->l, curr_proc);
+	convert_min_fixed_point(a->l, curr_proc);	
 	convert_min_fixed_point(a->r, curr_proc);
 }
 void calc_apriori_semantics(struct ast *r) 
@@ -482,13 +574,42 @@ void calc_apriori_semantics(struct ast *r)
 	fprintf(yyout, "\nP = ");
 	print_sem_equation(sem_root);
 	convert_min_fixed_point(sem_root, NULL);
-	fprintf(yyout, " = \n = ");
+	fprintf(yyout, " = \n\n = ");
 	print_sem_equation(sem_root);	
-	convert_par_composition(sem_root, NULL); 
-	fprintf(yyout, " = \n = ");
-	print_sem_equation(sem_root);	
-}
 
+	remove_proc_node(sem_root, NULL);
+
+	/*apply_distributive_law(sem_root, NULL);
+	fprintf(yyout, " = \n\n = ");
+       	print_sem_equation(sem_root);
+	*/
+	while(convert_par_composition(sem_root, NULL)) { 
+		fprintf(yyout, " = \n\n = ");
+		print_sem_equation(sem_root);
+	}
+	
+}
+void remove_proc_node(struct ast *a, struct ast *parent) 
+{
+	if (a == NULL)
+		return;
+	if ((a->nodetype == SEM_PROC || a->nodetype == SEM_CPROC) &&
+	    a->r != NULL) {
+		if (parent == NULL) {
+			sem_root = a->r;
+		} else {
+			if (parent->l == a) {
+				parent->l = a->r;
+			} else
+				parent->r = a->r;
+		}
+		remove_proc_node(a->r, parent);
+		free(a);	
+		return;
+	}
+	remove_proc_node(a->l, a);
+	remove_proc_node(a->r, a);
+}
 void print_sem_equation(struct ast *a) 
 {
 	if (a == NULL)
@@ -526,19 +647,19 @@ void print_sem_equation(struct ast *a)
 		print_sem_equation(a->r);
 		fprintf(yyout, ")");
 	} else if (a->nodetype == SEM_CIN) {
-		fprintf(yyout, "IN");
-		fprintf(yyout, "{");
+		fprintf(yyout, "CIN");
+		fprintf(yyout, "(");
 		print_sem_equation(a->l);
 		fprintf(yyout, ", ");
 		print_sem_equation(a->r);
-		fprintf(yyout, "}");
+		fprintf(yyout, ")");
 	} else if (a->nodetype == SEM_COUT) {
-		fprintf(yyout, "OUT");
-		fprintf(yyout, "{");
+		fprintf(yyout, "COUT");
+		fprintf(yyout, "(");
 		print_sem_equation(a->l);
 		fprintf(yyout, ", ");
 		print_sem_equation(a->r);
-		fprintf(yyout, "}");
+		fprintf(yyout, ")");
 	} else if (a->nodetype == SEM_TIME) {
 		fprintf(yyout, "TIME");
 		print_sem_equation(a->l);
@@ -572,13 +693,33 @@ void print_sem_equation(struct ast *a)
 		print_sem_equation(a->l);
 		print_sem_equation(a->r);
 	} else if (a->nodetype == SEM_PAR) {
-		print_sem_equation(a->l);
+		if (a->l && a->l->nodetype == '+') {
+			fprintf(yyout, "( ");
+			print_sem_equation(a->l);
+			fprintf(yyout, " )");
+		} else 
+			print_sem_equation(a->l);
 		fprintf(yyout, " || \n || ");
-		print_sem_equation(a->r);
+		if (a->r && a->r->nodetype == '+') {
+			fprintf(yyout, "( ");
+			print_sem_equation(a->r);
+			fprintf(yyout, " )");
+		} else 
+			print_sem_equation(a->r);
 	} else if (a->nodetype == SEM_PARLL) {
-		print_sem_equation(a->l);
+		if (a->l && a->l->nodetype == '+') {
+			fprintf(yyout, "( ");
+			print_sem_equation(a->l);
+			fprintf(yyout, " )");
+		} else 
+			print_sem_equation(a->l);
 		fprintf(yyout, " LL \n LL ");
-		print_sem_equation(a->r);
+		if (a->r && a->r->nodetype == '+') {
+			fprintf(yyout, "( ");
+			print_sem_equation(a->r);
+			fprintf(yyout, " )");
+		} else 
+			print_sem_equation(a->r);
 	} else if (a->nodetype == '#') {
 		fprintf(yyout, "(");
 		print_sem_equation(a->l);
@@ -586,9 +727,19 @@ void print_sem_equation(struct ast *a)
 		fprintf(yyout, ")");
 		fprintf(yyout, "%c", a->nodetype);
 	} else if (a->nodetype == '|') {
-		print_sem_equation(a->l);
+		if (a->l && a->l->nodetype == '+') {
+			fprintf(yyout, "( ");
+			print_sem_equation(a->l);
+			fprintf(yyout, " )");
+		} else 
+			print_sem_equation(a->l);
 		fprintf(yyout, " %c \n %c ", a->nodetype, a->nodetype);
-		print_sem_equation(a->r);
+		if (a->r && a->r->nodetype == '+') {
+			fprintf(yyout, "( ");
+			print_sem_equation(a->r);
+			fprintf(yyout, " )");
+		} else 
+			print_sem_equation(a->r);
 	} else if (a->nodetype == '+' ||
 		   a->nodetype == '^' ||
 		   a->nodetype == '*' ||
