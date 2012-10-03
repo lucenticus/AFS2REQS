@@ -365,73 +365,53 @@ int apply_distributive_law(struct ast *a, struct ast *parent)
 	if (a->nodetype == SEM_PARLL ||
 	    a->nodetype == '|') {
 		if (a->l && a->l->nodetype == '+') {
-			struct ast *tmp = a->l;
-			do {
-				struct ast *par = malloc(sizeof(struct ast));
-				par->nodetype = a->nodetype;
-				par->l = tmp->l;
-				par->r = a->r;
-				tmp->l = par;
-				if (tmp->r->nodetype  != '+') {
-					struct ast *par2 = malloc(sizeof(struct ast));
-					par2->nodetype = a->nodetype;
-					par2->l = tmp->r;
-					par2->r = a->r;
-					tmp->r = par2;
-				}
-				tmp = tmp->r;
-			} while (tmp->nodetype == '+');
-			if (parent != NULL) {
-				if (parent->l == a){
-					parent->l->nodetype = a->l->nodetype;
-					parent->l->l = a->l->l;
-					parent->l->r = a->l->r;
-				} else {
-					parent->r->nodetype = a->l->nodetype;
-					parent->r->l = a->l->l;
-					parent->r->r = a->l->r;
-
-				}
-			} else {
-				sem_root = a->l;
-			}
-			a = a->l;
-		} else if (a->r && a->r->nodetype == '+') {
-			struct ast *tmp = a->r;
-			do {
-				struct ast *par = malloc(sizeof(struct ast));
-				par->nodetype = a->nodetype;
-				par->l = a->l;
-				par->r = tmp->l;
-				tmp->l = par;
-				if (tmp->r->nodetype  != '+') {
-					struct ast *par2 = malloc(sizeof(struct ast));
-					par2->nodetype = a->nodetype;
-					par2->l = a->l;
-					par2->r = tmp->r;
-					tmp->r = par2;
-				}
-				tmp = tmp->r;		
-			} while (tmp->nodetype == '+');
-			if (parent != NULL) {
+			if (parent->nodetype == '+') {
 				if (parent->l == a) {
-					parent->l->nodetype = a->r->nodetype;
-					parent->l->l = a->r->l;
-					parent->l->r = a->r->r;
-				} else {
-					parent->r->nodetype = a->r->nodetype;
-					parent->r->l = a->r->l;
-					parent->r->r = a->r->r;
-				}
-			} else {
-				sem_root = a->r;
-			}
-			a = a->r;
-		}
-	}
+					struct ast *n1 = malloc(sizeof(struct ast));
+					n1->nodetype = '+';
+					n1->r = parent->r;
+					n1->l = new_ast(a->nodetype, a->l->r, a->r);
+					parent->r = n1;
+					parent->l = new_ast(a->nodetype, a->l->l, a->r);
 
-	apply_distributive_law(a, a->l); 
-	apply_distributive_law(a, a->r); 
+					a = parent;
+				} else {
+					struct ast *n1 = malloc(sizeof(struct ast));
+					n1->nodetype = '+';
+					n1->l = new_ast(a->nodetype, a->l->l, a->r);
+					n1->r = new_ast(a->nodetype, a->l->r, a->r);
+					parent->r = n1;
+					a = parent;
+				}
+			}
+			fprintf(yyout, " == \n\n == ");
+			print_sem_equation(sem_root);
+		} else if (a->r && a->r->nodetype == '+') {
+			if (parent->nodetype == '+') {
+				if (parent->l == a) {
+					struct ast *n1 = malloc(sizeof(struct ast));
+					n1->nodetype = '+';
+					n1->r = parent->r;
+					n1->l = new_ast(a->nodetype, a->l, a->r->r);
+					parent->r = n1;
+					parent->l = new_ast(a->nodetype, a->l, a->r->l);
+					a = parent;
+				} else {
+					struct ast *n1 = malloc(sizeof(struct ast));
+					n1->nodetype = '+';
+					n1->l = new_ast(a->nodetype, a->l, a->r->l);
+					n1->r = new_ast(a->nodetype, a->l, a->r->r);
+					parent->r = n1;
+					a = parent;
+				} 
+			}		
+			fprintf(yyout, " == \n\n == ");
+			print_sem_equation(sem_root);
+		}
+	} 
+	
+	apply_distributive_law(a->l, a);
+	apply_distributive_law(a->r, a);
 	return 0;
 }
 int convert_par_composition(struct ast *a, struct ast *parent) 
@@ -579,15 +559,17 @@ void calc_apriori_semantics(struct ast *r)
 
 	remove_proc_node(sem_root, NULL);
 
-	/*apply_distributive_law(sem_root, NULL);
-	fprintf(yyout, " = \n\n = ");
-       	print_sem_equation(sem_root);
-	*/
-	while(convert_par_composition(sem_root, NULL)) { 
+
+	
+	while(convert_par_composition(sem_root, NULL)) {
 		fprintf(yyout, " = \n\n = ");
 		print_sem_equation(sem_root);
+		
 	}
-	
+	apply_distributive_law(sem_root, NULL);
+	fprintf(yyout, " = \n\n = ");
+	print_sem_equation(sem_root);
+
 }
 void remove_proc_node(struct ast *a, struct ast *parent) 
 {
