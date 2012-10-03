@@ -373,7 +373,6 @@ int apply_distributive_law(struct ast *a, struct ast *parent)
 					n1->l = new_ast(a->nodetype, a->l->r, a->r);
 					parent->r = n1;
 					parent->l = new_ast(a->nodetype, a->l->l, a->r);
-
 					a = parent;
 				} else {
 					struct ast *n1 = malloc(sizeof(struct ast));
@@ -384,8 +383,6 @@ int apply_distributive_law(struct ast *a, struct ast *parent)
 					a = parent;
 				}
 			}
-			fprintf(yyout, " == \n\n == ");
-			print_sem_equation(sem_root);
 		} else if (a->r && a->r->nodetype == '+') {
 			if (parent->nodetype == '+') {
 				if (parent->l == a) {
@@ -405,8 +402,6 @@ int apply_distributive_law(struct ast *a, struct ast *parent)
 					a = parent;
 				} 
 			}		
-			fprintf(yyout, " == \n\n == ");
-			print_sem_equation(sem_root);
 		}
 	} 
 	
@@ -536,6 +531,7 @@ void convert_min_fixed_point(struct ast *a, struct ast *curr_proc)
 	convert_min_fixed_point(a->l, curr_proc);	
 	convert_min_fixed_point(a->r, curr_proc);
 }
+
 void calc_apriori_semantics(struct ast *r) 
 {
 	search_processes(r);
@@ -564,13 +560,14 @@ void calc_apriori_semantics(struct ast *r)
 	while(convert_par_composition(sem_root, NULL)) {
 		fprintf(yyout, " = \n\n = ");
 		print_sem_equation(sem_root);
-		
+		apply_distributive_law(sem_root, NULL);
+		fprintf(yyout, " == \n\n == ");
+		print_sem_equation(sem_root);
+
 	}
-	apply_distributive_law(sem_root, NULL);
-	fprintf(yyout, " = \n\n = ");
-	print_sem_equation(sem_root);
 
 }
+
 void remove_proc_node(struct ast *a, struct ast *parent) 
 {
 	if (a == NULL)
