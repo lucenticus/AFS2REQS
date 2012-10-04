@@ -593,7 +593,7 @@ int apply_axioms_for_ll_operation(struct ast *a, struct ast *parent)
 		return 0;
 	if (a->nodetype == SEM_PARLL) {
 		if (a->l && a->l->nodetype == '^' ||
-		    a->l && a->l->nodetype == '+' ) {
+		    a->l && a->l->nodetype == '*' ) {
 			struct ast *n = new_ast(SEM_PAR, a->l->r, a->r);
 			a->nodetype = a->l->nodetype;
 			a->l = a->l->l;
