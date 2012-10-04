@@ -409,6 +409,110 @@ int apply_distributive_law(struct ast *a, struct ast *parent)
 	apply_distributive_law(a->r, a);
 	return 0;
 }
+int apply_axioms_for_communication(struct ast *a, struct ast *parent) 
+{
+	if (a == NULL)
+		return 0;
+	if (a->nodetype == '|') {
+		if (a->l && a->l->nodetype == '^' &&
+		    a->r && a->r->nodetype == '^') {
+			//  (b1 ^ X) | (b2 ^ Y) = (b1 | b2) ^ (X || Y)
+			struct ast * left = new_ast('|', a->l->l, a->r->l);
+			struct ast * right = new_ast(SEM_PAR, a->l->r, a->r->r);
+			a->nodetype = '^';
+			a->l = left;
+			a->r = right;			
+		} if (a->l && a->l->nodetype == '*' &&
+		    a->r && a->r->nodetype == '*') {
+			// (a1 * X) | (a2 * Y) = (a1 | a2) * (X || Y)
+			struct ast * left = new_ast('|', a->l->l, a->r->l);
+			struct ast * right = new_ast(SEM_PAR, a->l->r, a->r->r);
+			a->nodetype = '*';
+			a->l = left;
+			a->r = right;			
+		} if (a->l && a->l->nodetype == '*' &&
+		      a->r && a->r->nodetype == '^' ||
+		      a->l && a->l->nodetype == '^' &&
+		      a->r && a->r->nodetype == '*') {
+			// (a * X) | (b ^ Y) = (a | b) ^ (X || Y)
+			struct ast * left = new_ast('|', a->l->l, a->r->l);
+			struct ast * right = new_ast(SEM_PAR, a->l->r, a->r->r);
+			a->nodetype = '^';
+			a->l = left;
+			a->r = right;			
+		} else if (a->l && a->l->nodetype == '*' ||
+			   a->r && a->r->nodetype == '*') {
+			if (a->l && a->l->nodetype == '*') {
+				// (a1 * X) | a2 = (a1 | a2) * X
+				struct ast * left = new_ast('|', a->l->l, a->r);
+				struct ast * right = a->l->r;
+				a->nodetype = '*';
+				a->l = left;
+				a->r = right;
+			} else {
+				// a1 | (a2 * X) = (a1 | a2) * X
+				struct ast * left = new_ast('|', a->l, a->r->l);
+				struct ast * right = a->r->r;
+				a->nodetype = '*';
+				a->l = left;
+				a->r = right;
+			}
+		} else if (a->l && a->l->nodetype == '^' ||
+			   a->r && a->r->nodetype == '^') {
+			if (a->l && a->l->nodetype == '^') {
+				// (b ^ X) | a = (a | b) ^ X
+				struct ast * left = new_ast('|', a->l->l, a->r);
+				struct ast * right = a->l->r;
+				a->nodetype = '^';
+				a->l = left;
+				a->r = right;
+			} else {
+				// a | (b ^ X) = (a | b) ^ X
+				struct ast * left = new_ast('|', a->l, a->r->l);
+				struct ast * right = a->r->r;
+				a->nodetype = '^';
+				a->l = left;
+				a->r = right;
+			}
+		}
+	}
+	apply_axioms_for_communication(a->l, a);
+	apply_axioms_for_communication(a->r, a);
+}
+int apply_communication_rule(struct ast *a, struct ast *parent) 
+{
+	if (a == NULL)
+		return 0;
+	if (a->nodetype == '|') {
+		if (a->l && a->r && (
+		    a->l->nodetype == SEM_IN   && a->r->nodetype == SEM_COUT ||
+		    a->l->nodetype == SEM_CIN  && a->r->nodetype == SEM_OUT  ||
+		    a->l->nodetype == SEM_OUT  && a->r->nodetype == SEM_CIN  ||
+		    a->l->nodetype == SEM_COUT && a->r->nodetype == SEM_IN)) {
+			struct term_id *l1 = (struct term_id *) a->l->l;
+			struct term_id *l2 = (struct term_id *) a->l->r;
+			struct term_id *r1 = (struct term_id *) a->r->l;
+			struct term_id *r2 = (struct term_id *) a->r->r;
+			if (strcmp(l1->name, r1->name) == 0 &&
+			    strcmp(l2->name, r2->name) == 0) {
+				a->nodetype = SEM_GAMMA;
+				a->l = new_id(l1->name);
+				a->r = new_id(r1->name);
+			} else {
+				a->nodetype = SEM_NULL;
+				a->l = NULL;
+				a->r = NULL;
+			}
+		} else {
+			a->nodetype = SEM_NULL;
+			a->l = NULL;
+			a->r = NULL;
+		}
+	}
+	apply_communication_rule(a->l, a);
+	apply_communication_rule(a->r, a);
+	return 0;
+}
 int convert_par_composition(struct ast *a, struct ast *parent) 
 {
 	if (a == NULL)
@@ -554,14 +658,18 @@ void calc_apriori_semantics(struct ast *r)
 	print_sem_equation(sem_root);	
 
 	remove_proc_node(sem_root, NULL);
-
-
 	
 	while(convert_par_composition(sem_root, NULL)) {
 		fprintf(yyout, " = \n\n = ");
 		print_sem_equation(sem_root);
 		apply_distributive_law(sem_root, NULL);
 		fprintf(yyout, " == \n\n == ");
+		print_sem_equation(sem_root);
+		apply_axioms_for_communication(sem_root, NULL);
+		fprintf(yyout, " === \n\n === ");
+		print_sem_equation(sem_root);
+		apply_communication_rule(sem_root, NULL);
+		fprintf(yyout, " === \n\n === ");
 		print_sem_equation(sem_root);
 
 	}
@@ -639,6 +747,17 @@ void print_sem_equation(struct ast *a)
 		fprintf(yyout, ", ");
 		print_sem_equation(a->r);
 		fprintf(yyout, ")");
+	} else if (a->nodetype == SEM_GAMMA) {
+		fprintf(yyout, "gamma");
+		fprintf(yyout, "(");
+		print_sem_equation(a->l);
+		fprintf(yyout, ", ");
+		print_sem_equation(a->r);
+		fprintf(yyout, ")");
+	} else if (a->nodetype == SEM_NULL) {
+		fprintf(yyout, "@");
+		print_sem_equation(a->l);
+		print_sem_equation(a->r);
 	} else if (a->nodetype == SEM_TIME) {
 		fprintf(yyout, "TIME");
 		print_sem_equation(a->l);
@@ -719,8 +838,28 @@ void print_sem_equation(struct ast *a)
 			fprintf(yyout, " )");
 		} else 
 			print_sem_equation(a->r);
-	} else if (a->nodetype == '+' ||
-		   a->nodetype == '^' ||
+	} /*else if (a->nodetype == '^') {
+		if (a->l && 
+		    (a->l->nodetype == '|' ||
+		     a->l->nodetype == SEM_PAR)
+		    ) {
+			fprintf(yyout, "( ");
+			print_sem_equation(a->l);
+			fprintf(yyout, " )");
+		} else 
+			print_sem_equation(a->l);
+		fprintf(yyout, " %c ", a->nodetype);
+		if (a->r && 
+		    (a->r->nodetype == '|' ||
+		     a->r->nodetype == SEM_PAR)
+		    ) {
+			fprintf(yyout, "( ");
+			print_sem_equation(a->r);
+			fprintf(yyout, " )");
+		} else 
+			print_sem_equation(a->r);
+	}*/ else if (a->nodetype == '^' ||
+		   a->nodetype == '+' ||
 		   a->nodetype == '*' ||
 		   a->nodetype == 'U' ) {
 		print_sem_equation(a->l);

@@ -29,7 +29,9 @@ enum NODETYPE {
 	SEM_T,
 	SEM_COM,         
 	SEM_PAR,
-	SEM_PARLL
+	SEM_PARLL,
+	SEM_GAMMA,
+	SEM_NULL
 };
 
 struct ast {
