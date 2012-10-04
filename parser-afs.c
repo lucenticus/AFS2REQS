@@ -587,11 +587,28 @@ int apply_communication_rule(struct ast *a, struct ast *parent)
 	apply_communication_rule(a->r, a);
 	return 0;
 }
+int apply_axioms_for_ll_operation(struct ast *a, struct ast *parent) 
+{
+	if (a == NULL)
+		return 0;
+	if (a->nodetype == SEM_PARLL) {
+		if (a->l && a->l->nodetype == '^' ||
+		    a->l && a->l->nodetype == '+' ) {
+			struct ast *n = new_ast(SEM_PAR, a->l->r, a->r);
+			a->nodetype = a->l->nodetype;
+			a->l = a->l->l;
+			a->r = n;
+		}
+	}
+	apply_axioms_for_ll_operation(a->l, a);
+	apply_axioms_for_ll_operation(a->r, a);
+	return 0;
+}
 int convert_par_composition(struct ast *a, struct ast *parent) 
 {
 	if (a == NULL)
 		return 0;
-
+	
 	if (a->nodetype == SEM_PAR) {
 		struct ast *add1 = malloc(sizeof(struct ast));
 		add1->nodetype = '+';
@@ -752,7 +769,11 @@ void calc_apriori_semantics(struct ast *r)
 			fprintf(yyout, " +++\n\n = ");
 			print_sem_equation(sem_root);
 		} while (retval);
-
+		
+		apply_axioms_for_ll_operation(sem_root, NULL);
+		fprintf(yyout, " = \n\n+++ Apply axioms for operation LL +++\n\n = ");
+		print_sem_equation(sem_root);
+		
 	}
 
 }
