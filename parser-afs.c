@@ -598,7 +598,10 @@ int apply_axioms_for_ll_operation(struct ast *a, struct ast *parent)
 			a->nodetype = a->l->nodetype;
 			a->l = a->l->l;
 			a->r = n;
+			fprintf(yyout, " = \n\n+++ Apply axioms for operation LL +++\n\n = ");
+			print_sem_equation(sem_root);
 		}
+		
 	}
 	apply_axioms_for_ll_operation(a->l, a);
 	apply_axioms_for_ll_operation(a->r, a);
@@ -669,7 +672,7 @@ void convert_min_fixed_point(struct ast *a, struct ast *curr_proc)
 	    a->nodetype == SEM_CPROC) {
 		curr_proc = a;
 	} else if (a->nodetype == '#') {
-		if(a->l != NULL && a->l->nodetype == '^') {
+		if(a->l && a->l->nodetype == '^') {
 			if (a->l->l != NULL && 
 			    a->l->l->nodetype == SEM_B) {
 				struct ast *comp = malloc(sizeof(struct ast));
@@ -708,14 +711,28 @@ void convert_min_fixed_point(struct ast *a, struct ast *curr_proc)
 			proc->r = NULL;
 			proc_comp->r = proc;
 			tmp->r = proc_comp;
-		} else if (a->l != NULL) {			
+		} else if (a->l && a->l->nodetype == '*') {			
+			struct ast *tmp = a->l;
+			while (tmp->r != NULL && 
+			       (tmp->r->nodetype == '*' || 
+				tmp->r->nodetype == '+' || 
+				tmp->r->nodetype == '^')) {
+				tmp = tmp->r;					
+			} 
+			if (tmp == NULL) {
+				printf("\nERROR in convert_min_fixed_point: can't find right operand");
+				return;
+			}
+			struct ast * proc_comp = malloc(sizeof(struct ast));
+			proc_comp->nodetype = '*';
+			proc_comp->l = tmp->r;
 			struct ast * proc = malloc(sizeof(struct ast));
 			proc->nodetype = curr_proc->nodetype;
 			proc->l = curr_proc->l;
-
+			
 			proc->r = NULL;
-			a->r = proc;
-			a->nodetype = '*';
+			proc_comp->r = proc;
+			tmp->r = proc_comp;
 		}
 		if (a->nodetype == '#') {
 			a->nodetype = a->l->nodetype;
@@ -940,7 +957,8 @@ void print_sem_equation(struct ast *a)
 			fprintf(yyout, " )");
 		} else 
 			print_sem_equation(a->r);
-	} /*else if (a->nodetype == '^') {
+	} else if (a->nodetype == '^' ||
+		    a->nodetype == '*') {
 		if (a->l && 
 		    (a->l->nodetype == '|' ||
 		     a->l->nodetype == SEM_PAR)
@@ -960,9 +978,7 @@ void print_sem_equation(struct ast *a)
 			fprintf(yyout, " )");
 		} else 
 			print_sem_equation(a->r);
-	}*/ else if (a->nodetype == '^' ||
-		   a->nodetype == '+' ||
-		   a->nodetype == '*' ||
+	} else if (a->nodetype == '+' ||
 		   a->nodetype == 'U' ) {
 		print_sem_equation(a->l);
 		fprintf(yyout, " %c ", a->nodetype);
