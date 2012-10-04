@@ -409,6 +409,80 @@ int apply_distributive_law(struct ast *a, struct ast *parent)
 	apply_distributive_law(a->r, a);
 	return 0;
 }
+int apply_basis_axioms(struct ast *a, struct ast *parent)  
+{
+	if (a == NULL)
+		return 0;
+	if (a->nodetype == '*') {
+		if (a->l && a->l->nodetype == SEM_NULL) {
+			// @ * X = @
+			fprintf(yyout, "@ * X = @");
+			a->nodetype = SEM_NULL;
+			a->l = NULL;
+			a->r = NULL;
+			return 1;
+		} else if (a->l && a->l->nodetype == SEM_TAU) {
+			// tau * X = X
+			fprintf(yyout, "tau * X = X");
+			a->nodetype = a->r->nodetype;
+			a->l = a->r->l;
+			a->r = a->r->r;
+			return 1;
+		} else if (a->r && a->r->nodetype == SEM_TAU) {
+			// X * tau = X			
+			fprintf(yyout, "X * tau = X");
+			a->nodetype = a->l->nodetype;
+			a->r = a->l->r;
+			a->l = a->l->l;
+
+			return 1;
+		} else if (a->l && a->l->nodetype == '+') {
+			// (X + Y) * Z = X * Z + Y *Z
+			// TODO
+			fprintf(yyout, "(X + Y) * Z = X * Z + Y *Z");
+			return 0;
+		} else if (a->l && a->l->nodetype == '^') {
+			// (b ^ X) * Y = b ^ (X * Y)
+			fprintf(yyout, "(b ^ X) * Y = b ^ (X * Y)");
+			// TODO
+			return 0;
+		}
+	} else if (a->nodetype == '^') {
+		if (a->l && 
+		    (a->l->nodetype == SEM_NULL || a->l->nodetype == SEM_F)) {
+			// F ^ X = @
+			fprintf(yyout, "F ^ X = @ or ");
+			// @ ^ X = @
+			fprintf(yyout, "@ ^ X = @");
+			a->nodetype = SEM_NULL;
+			a->l = NULL;
+			a->r = NULL;
+			return 1;
+		} 
+	} else if (a->nodetype == '+') {
+		if (a->l && a->l->nodetype == SEM_NULL) {
+			// @ + X = X			
+			fprintf(yyout, "@ + X = X");
+			a->nodetype = a->r->nodetype;
+			a->l = a->r->l;
+			a->r = a->r->r;
+
+			return 1;
+		} else if (a->r && a->r->nodetype == SEM_NULL) {
+			// X + @ = X
+			fprintf(yyout, "X + @ = X");
+			a->nodetype = a->l->nodetype;
+			a->r = a->l->r;
+			a->l = a->l->l;
+
+			return 1;
+		} 
+	}
+	int retval = apply_basis_axioms(a->l, a);
+	if (retval == 0)
+		retval = apply_basis_axioms(a->r, a);
+	return retval;
+}
 int apply_axioms_for_communication(struct ast *a, struct ast *parent) 
 {
 	if (a == NULL)
@@ -660,17 +734,24 @@ void calc_apriori_semantics(struct ast *r)
 	remove_proc_node(sem_root, NULL);
 	
 	while(convert_par_composition(sem_root, NULL)) {
-		fprintf(yyout, " = \n\n = ");
+		fprintf(yyout, " = \n\n+++ Convert parallel composition +++\n\n = ");
 		print_sem_equation(sem_root);
 		apply_distributive_law(sem_root, NULL);
-		fprintf(yyout, " == \n\n == ");
+		fprintf(yyout, " = \n\n+++ Apply distibutive rule +++\n\n = ");
 		print_sem_equation(sem_root);
 		apply_axioms_for_communication(sem_root, NULL);
-		fprintf(yyout, " === \n\n === ");
+		fprintf(yyout, " = \n\n+++ Apply axioms for communication +++\n\n = ");
 		print_sem_equation(sem_root);
 		apply_communication_rule(sem_root, NULL);
-		fprintf(yyout, " === \n\n === ");
+		fprintf(yyout, " = \n\n+++ Apply communication rule +++\n\n = ");
 		print_sem_equation(sem_root);
+		int retval = 0;
+		do {
+			fprintf(yyout, " = \n\n+++ Apply basis axiom : ");
+			retval = apply_basis_axioms(sem_root, NULL);
+			fprintf(yyout, " +++\n\n = ");
+			print_sem_equation(sem_root);
+		} while (retval);
 
 	}
 
