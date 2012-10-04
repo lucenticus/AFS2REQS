@@ -477,6 +477,23 @@ int apply_basis_axioms(struct ast *a, struct ast *parent)
 
 			return 1;
 		} 
+	} else if (a->nodetype == SEM_PAR) {
+		if (a->l && a->l->nodetype == SEM_TAU) {
+			// tau || X = X
+			fprintf(yyout, "tau || X = X");
+			a->nodetype = a->r->nodetype;
+			a->l = a->r->l;
+			a->r = a->r->r;
+			return 1;
+		}
+		if (a->r && a->r->nodetype == SEM_TAU) {
+			// X || tau = X
+			fprintf(yyout, "X || tau = X");
+			a->nodetype = a->l->nodetype;
+			a->r = a->l->r;
+			a->l = a->l->l;
+			return 1;
+		}
 	}
 	int retval = apply_basis_axioms(a->l, a);
 	if (retval == 0)
