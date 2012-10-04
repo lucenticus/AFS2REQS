@@ -607,6 +607,39 @@ int apply_axioms_for_ll_operation(struct ast *a, struct ast *parent)
 	apply_axioms_for_ll_operation(a->r, a);
 	return 0;
 }
+
+int apply_encapsulation_operation(struct ast *a, struct ast *parent) 
+{
+	if (a == NULL)
+		return 0;
+	if (a->nodetype == '+') {
+		if (a->l && (a->l->nodetype == '^' ||
+			     a->l->nodetype == '*')) {
+			if (a->l->l && 
+			    (a->l->l->nodetype == SEM_IN ||
+			     a->l->l->nodetype == SEM_CIN ||
+			     a->l->l->nodetype == SEM_OUT ||
+			     a->l->l->nodetype == SEM_COUT)) {
+				struct ast *n = new_ast(SEM_NULL, NULL, NULL);
+				a->l->l = n;
+			}
+		}
+		if (a->r && (a->r->nodetype == '^' ||
+			     a->r->nodetype == '*')) {
+			if (a->r->l && 
+			    (a->r->l->nodetype == SEM_IN ||
+			     a->r->l->nodetype == SEM_CIN ||
+			     a->r->l->nodetype == SEM_OUT ||
+			     a->r->l->nodetype == SEM_COUT)) {
+				struct ast *n = new_ast(SEM_NULL, NULL, NULL);
+				a->r->l = n;
+			}
+		}
+	}
+	apply_encapsulation_operation(a->l, a);
+	apply_encapsulation_operation(a->r, a);
+	return 0;
+}
 int convert_par_composition(struct ast *a, struct ast *parent) 
 {
 	if (a == NULL)
@@ -791,6 +824,16 @@ void calc_apriori_semantics(struct ast *r)
 		fprintf(yyout, " = \n\n+++ Apply axioms for operation LL +++\n\n = ");
 		print_sem_equation(sem_root);
 		
+		apply_encapsulation_operation(sem_root, NULL);
+		fprintf(yyout, " = \n\n+++ Apply encapsulation operation +++\n\n = ");
+		print_sem_equation(sem_root);
+		
+		do {
+			fprintf(yyout, " = \n\n+++ Apply basis axiom : ");
+			retval = apply_basis_axioms(sem_root, NULL);
+			fprintf(yyout, " +++\n\n = ");
+			print_sem_equation(sem_root);
+		} while (retval);
 	}
 
 }
