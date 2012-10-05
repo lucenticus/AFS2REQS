@@ -1,7 +1,8 @@
 #ifndef PARSER_AFS_H
 #define PARSER_AFS_H
-
 #define NHASH (9997)
+
+#include <stdlib.h>
 
 enum NODETYPE {
 	NODE_ID = 1000,
@@ -31,7 +32,8 @@ enum NODETYPE {
 	SEM_PAR,
 	SEM_PARLL,
 	SEM_GAMMA,
-	SEM_NULL
+	SEM_NULL,
+	SEM_EQ
 };
 
 struct ast {
@@ -76,8 +78,8 @@ struct ast *root;
 struct ast *sem_root;
 struct proc_list *processes;
 struct proc_list *sem_processes;
+int last_eq_index = 1;
 struct symbol symtab[NHASH];
-
 struct symbol *lookup(char*);
 void addref(char*, int);
 
@@ -99,4 +101,5 @@ void convert_min_fixed_point(struct ast *a, struct ast *curr_proc);
 int convert_par_composition(struct ast *a, struct ast *parent);
 int apply_distributive_law(struct ast *a, struct ast *parent);
 void remove_proc_node(struct ast *a, struct ast *parent);
+int apply_equational_characterization(struct ast *a, struct ast *parent);
 #endif /*PARSER_AFS_H*/

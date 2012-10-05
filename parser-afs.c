@@ -1,3 +1,4 @@
+#include <stdlib.h>
 int column = 0;
 
 void count()
@@ -657,6 +658,30 @@ int apply_encapsulation_operation(struct ast *a, struct ast *parent)
 	apply_encapsulation_operation(a->r, a);
 	return 0;
 }
+int apply_equational_characterization(struct ast *a, struct ast *parent)
+{
+	if (a == NULL)
+		return 0;
+	if (a->nodetype == '+') {
+		if (a->l && (a->l->nodetype == '^' || a->l->nodetype == '*')) {
+			char buf[10] = {0};
+			sprintf(buf, "%d" , ++last_eq_index);
+			struct ast *id = new_id(buf);
+			struct ast *n = new_ast(SEM_EQ, id, a->l->r);
+			a->l->r = n;
+		} 
+		if (a->r && (a->r->nodetype == '^' || a->r->nodetype == '*')) {
+			char buf[10] = {0};
+			sprintf(buf, "%d" , ++last_eq_index);
+			struct ast *id = new_id(buf);
+			struct ast *n = new_ast(SEM_EQ, id, a->r->r);
+			a->r->r = n;
+		}
+	}
+	apply_equational_characterization(a->l, a);
+	apply_equational_characterization(a->r, a);
+	return 0;
+}
 int convert_par_composition(struct ast *a, struct ast *parent) 
 {
 	if (a == NULL)
@@ -852,6 +877,9 @@ void calc_apriori_semantics(struct ast *r)
 			print_sem_equation(sem_root);
 		} while (retval);
 	}
+	apply_equational_characterization(sem_root, NULL);
+	fprintf(yyout, " = \n\n+++ Apply equational_characterization +++\n\n = ");
+	print_sem_equation(sem_root);
 
 }
 
@@ -898,6 +926,11 @@ void print_sem_equation(struct ast *a)
 			print_sem_equation(a->r);
 			fprintf(yyout, ")");
 		}
+	} else if (a->nodetype == SEM_EQ) {
+		fprintf(yyout, "P");
+		fprintf(yyout, "(");
+		print_sem_equation(a->l);
+		fprintf(yyout, ")");
 	} else if (a->nodetype == SEM_IN) {
 		fprintf(yyout, "IN");
 		fprintf(yyout, "(");
