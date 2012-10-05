@@ -674,9 +674,9 @@ int apply_equational_characterization(struct ast *a, struct ast *parent)
 {
 	if (a == NULL)
 		return 0;
+	char buf[10] = {0};
 	if (a->nodetype == '+') {
-		if (a->l && (a->l->nodetype == '^' || a->l->nodetype == '*')) {
-			char buf[10] = {0};
+		if (a->l && (a->l->nodetype == '^' || a->l->nodetype == '*')) {		
 			sprintf(buf, "%d" , ++last_eq_index);
 			struct ast *id = new_id(buf);
 			struct ast *n = new_ast(SEM_EQ, id, a->l->r);
@@ -684,13 +684,19 @@ int apply_equational_characterization(struct ast *a, struct ast *parent)
 			a->l->r = n;
 		} 
 		if (a->r && (a->r->nodetype == '^' || a->r->nodetype == '*')) {
-			char buf[10] = {0};
 			sprintf(buf, "%d" , ++last_eq_index);
 			struct ast *id = new_id(buf);
 			struct ast *n = new_ast(SEM_EQ, id, a->r->r);
 			equations[last_eq_index] = get_sem_tree_copy(a->r->r);
 			a->r->r = n;
 		}
+	} else if (parent == NULL && (a->nodetype == '^' || a->nodetype == '*')) {
+		sprintf(buf, "%d" , ++last_eq_index);
+		struct ast *id = new_id(buf);
+		struct ast *n = new_ast(SEM_EQ, id, a->r);
+		equations[last_eq_index] = get_sem_tree_copy(a->r);
+		a->r = n;
+
 	}
 	apply_equational_characterization(a->l, a);
 	apply_equational_characterization(a->r, a);
@@ -702,6 +708,11 @@ int convert_par_composition(struct ast *a, struct ast *parent)
 		return 0;
 	
 	if (a->nodetype == SEM_PAR) {
+		if (a->l && a->l->nodetype == SEM_PAR) {
+			struct ast *t = a->r;
+			a->r = a->l;
+			a->l = t;
+		}
 		struct ast *add1 = malloc(sizeof(struct ast));
 		add1->nodetype = '+';
 
@@ -729,7 +740,7 @@ int convert_par_composition(struct ast *a, struct ast *parent)
 		add2->r = parl;
 		
 		add1->r = add2;
-				
+
 		if (a->r && a->r->nodetype == SEM_PAR) {
 			parll1->r = a->r->l;
 			parll2->l = a->r->l;
@@ -859,14 +870,15 @@ void calc_apriori_semantics(struct ast *r)
 	equations[0] = sem_root;
 	int i = 1;
 	equations[i] = get_sem_tree_copy(sem_root);
-	for (i = 1; i <= 3; i ++) {
-		fprintf(yyout, " \nP(%d)", i);
+	for (i = 1; i <= 16; i ++) {
+		fprintf(yyout, " \nP(%d) = ", i);
+		print_sem_equation(equations[i]);
 		while(convert_par_composition(equations[i], NULL)) {			
 			fprintf(yyout, " = \n\n+++ Convert parallel composition +++\n\n = ");
 			print_sem_equation(equations[i]);
 			apply_distributive_law(equations[i], NULL);
 			fprintf(yyout, " = \n\n+++ Apply distibutive rule +++\n\n = ");
-			print_sem_equation(sem_root);
+			print_sem_equation(equations[i]);
 			apply_axioms_for_communication(equations[i], NULL);
 			fprintf(yyout, " = \n\n+++ Apply axioms for communication +++\n\n = ");
 			print_sem_equation(equations[i]);
