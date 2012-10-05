@@ -184,7 +184,7 @@ struct ast* afs_to_sem(struct ast *a)
 		return a;
 	} else if (a->nodetype == NODE_CHAN) {
 		struct term_chan * ch = (struct term_chan *) a;
-		fprintf(yyout, "K_%s = (CIN(", ch->id->name);
+		fprintf(yyout, "K%s = (CIN(", ch->id->name);
 		fprintf(yyout, "%s, %s) * ", 
 			ch->id->name, ch->in_id->name);
 		fprintf(yyout, "COUT(%s, %s))#", 
@@ -214,7 +214,7 @@ struct ast* afs_to_sem(struct ast *a)
 		proc->r = fix_op;
 		return proc;
 	} else if (a->nodetype == NODE_FUNC) {
-		fprintf(yyout, "P_%s = ", ((struct term_id *)a->l)->name);
+		fprintf(yyout, "P%s = ", ((struct term_id *)a->l)->name);
 		struct ast *proc = malloc(sizeof(struct ast));
 		proc->nodetype = SEM_PROC;
 		proc->r = afs_to_sem(a->r); 
@@ -222,7 +222,7 @@ struct ast* afs_to_sem(struct ast *a)
 		fprintf(yyout, "\n");
 		return proc;
 	} else if (a->nodetype == COM) {
-		fprintf(yyout, "A_%s", ((struct term_id *)a->l)->name);
+		fprintf(yyout, "A%s", ((struct term_id *)a->l)->name);
 		struct ast *com = malloc(sizeof(struct ast));
 		com->nodetype = SEM_COM;
 		com->l = a->l;
@@ -805,12 +805,40 @@ void convert_min_fixed_point(struct ast *a, struct ast *curr_proc)
 			struct ast * proc_comp = malloc(sizeof(struct ast));
 			proc_comp->nodetype = '*';
 			proc_comp->l = tmp->r;
-			struct ast * proc = malloc(sizeof(struct ast));
-			proc->nodetype = curr_proc->nodetype;
-			proc->l = curr_proc->l;
-			proc->r = NULL;
-			proc_comp->r = proc;
+			struct  ast* pr = malloc(sizeof(struct ast));
+			pr->nodetype = curr_proc->nodetype;
+			pr->l = curr_proc->l;
+			pr->r = NULL;
+
+			proc_comp->r = pr;
 			tmp->r = proc_comp;
+
+				
+			if (subst == NULL) {
+				subst = malloc(sizeof(struct subst_list));
+				if (a->nodetype == '+')
+					subst->p = new_ast(pr->nodetype, 
+							   pr->l, 
+							   get_sem_tree_copy(a));
+				else
+					subst->p = new_ast(pr->nodetype, 
+							   pr->l, 
+							   get_sem_tree_copy(a->l));
+				subst->next = NULL;
+			} else {
+				struct subst_list *n = malloc(sizeof(struct subst_list));
+				if (a->nodetype == '+')
+					n->p = new_ast(pr->nodetype, 
+							   pr->l, 
+							   get_sem_tree_copy(a));
+				else
+					n->p = new_ast(pr->nodetype, 
+							   pr->l, 
+							   get_sem_tree_copy(a->l));
+				n->next = subst;
+				subst = n;
+			}
+			
 		} else if (a->l && a->l->nodetype == '*') {			
 			struct ast *tmp = a->l;
 			while (tmp->r != NULL && 
@@ -826,13 +854,29 @@ void convert_min_fixed_point(struct ast *a, struct ast *curr_proc)
 			struct ast * proc_comp = malloc(sizeof(struct ast));
 			proc_comp->nodetype = '*';
 			proc_comp->l = tmp->r;
-			struct ast * proc = malloc(sizeof(struct ast));
-			proc->nodetype = curr_proc->nodetype;
-			proc->l = curr_proc->l;
+			struct ast * pr = malloc(sizeof(struct ast));
+			pr->nodetype = curr_proc->nodetype;
+			pr->l = curr_proc->l;
+			pr->r = NULL;
 			
-			proc->r = NULL;
-			proc_comp->r = proc;
+			
+			proc_comp->r = pr;
 			tmp->r = proc_comp;
+			
+			if (subst == NULL) {
+				subst = malloc(sizeof(struct subst_list));
+				subst->p = new_ast(pr->nodetype, 
+						   pr->l, 
+						   get_sem_tree_copy(a->l));
+				subst->next = NULL;
+			} else {
+				struct subst_list *n = malloc(sizeof(struct subst_list));
+				n->p = new_ast(pr->nodetype, 
+						   pr->l, 
+						   get_sem_tree_copy(a->l));
+				n->next = subst;
+				subst = n;
+			}
 		}
 		if (a->nodetype == '#') {
 			a->nodetype = a->l->nodetype;
@@ -843,7 +887,84 @@ void convert_min_fixed_point(struct ast *a, struct ast *curr_proc)
 	convert_min_fixed_point(a->l, curr_proc);	
 	convert_min_fixed_point(a->r, curr_proc);
 }
+void expand_substitutions(struct ast *a) 
+{
+	if (a == NULL)
+		return;
+	if (a->nodetype == SEM_PROC || a->nodetype == SEM_CPROC) {
+		struct subst_list *tmp = subst;
+		while (tmp) {
+			//fprintf(yyout, " = \n\n !!!!!= ");
+			//print_sem_equation(tmp->p);
+			//fprintf(yyout, " !!!!! = \n\n = ");
+			if (tmp->p && tmp->p->nodetype == a->nodetype &&
+			    tmp->p->l && tmp->p->r && a->l) {
+				if (strcmp(((struct term_id *)tmp->p->l)->name, 
+					   ((struct term_id *)a->l)->name) == 0) {
+					
+					a->nodetype = tmp->p->r->nodetype;
+					a->l = get_sem_tree_copy(tmp->p->r->l);
+					a->r = get_sem_tree_copy(tmp->p->r->r);
+				}
+			}
+			tmp = tmp->next;
+		}
+		return;
+	}
+	expand_substitutions(a->l); 
+	expand_substitutions(a->r);
+}
+void reduce_substitutions(struct ast *a) 
+{
+	if (a == NULL)
+		return;
+	struct subst_list *tmp = subst;
+	while (tmp) {
+	
+		if (tmp->p && tmp->p->r->nodetype == a->nodetype) {
+			int val = 1;
+			is_equal_subtree(tmp->p->r, a, &val);
+			if (val == 1) { 
+				/*fprintf(yyout, " EQUALS");
+				fprintf(yyout, "\n!!!! Comparison: ");
+				print_sem_equation(tmp->p->r);
+				fprintf(yyout, " == ");
+				print_sem_equation(a);
+				fprintf(yyout, " !!!!\n");*/
+				a->nodetype = tmp->p->nodetype;
+				a->l = tmp->p->l;
+				a->r = NULL;
+			}
+		}
+		tmp = tmp->next;
+	}
+	reduce_substitutions(a->l);
+	reduce_substitutions(a->r);
+}
+void is_equal_subtree(struct ast *a, struct ast *b, int *val) {
+	if (a == NULL && b == NULL)
+		return;
 
+	if (a == NULL && b != NULL || a != NULL && b == NULL) {
+		*val = 0;
+		return;
+	}
+
+	
+	if (a->nodetype != b->nodetype) {
+		*val = 0;
+		return;
+	}
+	if (a->nodetype == b->nodetype &&
+	    a->nodetype == NODE_ID &&
+	    strcmp(((struct term_id *)a)->name,((struct term_id *)b)->name) != 0) {
+		*val = 0;
+		return;
+	}
+	
+	is_equal_subtree(a->l, b->l, val);
+	is_equal_subtree(a->r, b->r, val);
+}
 void calc_apriori_semantics(struct ast *r) 
 {
 	search_processes(r);
@@ -861,16 +982,20 @@ void calc_apriori_semantics(struct ast *r)
 	/*print_tree(sem_root);*/
 	fprintf(yyout, "\nP = ");
 	print_sem_equation(sem_root);
+	subst = NULL;
 	convert_min_fixed_point(sem_root, NULL);
+	remove_proc_node(sem_root, NULL);
 	fprintf(yyout, " = \n\n = ");
 	print_sem_equation(sem_root);	
 
-	remove_proc_node(sem_root, NULL);
+
 	
 	equations[0] = sem_root;
 	int i = 1;
 	equations[i] = get_sem_tree_copy(sem_root);
 	for (i = 1; i <= 16; i ++) {
+		if (i > 1) 
+			expand_substitutions(equations[i]);
 		fprintf(yyout, " \nP(%d) = ", i);
 		print_sem_equation(equations[i]);
 		while(convert_par_composition(equations[i], NULL)) {			
@@ -908,10 +1033,16 @@ void calc_apriori_semantics(struct ast *r)
 				print_sem_equation(equations[i]);
 			} while (retval);
 		}
+
+		reduce_substitutions(equations[i]);
+		fprintf(yyout, " = \n\n+++ Reduce equations  +++\n\n");
+		print_sem_equation(equations[i]);
+
 		apply_equational_characterization(equations[i], NULL);
 		fprintf(yyout, " = \n\n+++ Apply equational_characterization +++\n\nP(%d) = ", i);
 		print_sem_equation(equations[i]);
-		fprintf(yyout, " \n\n//////////////////////////////////////////////////////////// \n\n", i);
+		fprintf(yyout, " \n\nlast index = %d \n", last_eq_index);
+		fprintf(yyout, " \n//////////////////////////////////////////////////////////// \n\n", i);
 	}
 	
 }
@@ -949,16 +1080,13 @@ void print_sem_equation(struct ast *a)
 		   a->nodetype == SEM_CPROC) {
 		if (a->r == NULL) {
 			if (a->nodetype == SEM_PROC) {
-				fprintf(yyout, "P_%s", ((struct term_id*)a->l)->name);
+				fprintf(yyout, "P%s", ((struct term_id*)a->l)->name);
 			} else {
-				fprintf(yyout, "K_%s", ((struct term_id*)a->l)->name);
+				fprintf(yyout, "K%s", ((struct term_id*)a->l)->name);
 			}
-		} else {
-			fprintf(yyout, "(");
-			/*print_sem_equation(a->l);*/
+		} else
 			print_sem_equation(a->r);
-			fprintf(yyout, ")");
-		}
+		
 	} else if (a->nodetype == SEM_EQ) {
 		fprintf(yyout, "P");
 		fprintf(yyout, "(");

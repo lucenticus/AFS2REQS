@@ -74,10 +74,15 @@ struct proc_list {
 	struct proc_list *next;
 };
 
+struct subst_list {
+	struct ast *p;
+	struct subst_list *next;
+};
 struct ast *root;
 struct ast *sem_root;
 struct proc_list *processes;
 struct proc_list *sem_processes;
+struct subst_list *subst;
 int last_eq_index = 1;
 struct ast *equations[MAX_EQ];
 
@@ -113,4 +118,7 @@ int apply_axioms_for_communication(struct ast *a, struct ast *parent);
 int apply_encapsulation_operation(struct ast *a, struct ast *parent);
 int apply_axioms_for_ll_operation(struct ast *a, struct ast *parent);
 
+void expand_substitutions(struct ast *a);
+void reduce_substitutions(struct ast *a);
+void is_equal_subtree(struct ast *a, struct ast *b, int * val);
 #endif /*PARSER_AFS_H*/
