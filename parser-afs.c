@@ -138,7 +138,19 @@ void print_tree(struct ast *a)
 	print_tree(a->l);
 	print_tree(a->r);
 }
-
+struct ast * get_sem_tree_copy(struct ast *node) 
+{
+	if (node == NULL)
+		return NULL;
+	if (node->nodetype == NODE_ID) {
+		struct term_id *id = (struct term_id *) node;
+		return new_id(id->name);
+	}
+	struct ast *node_copy = new_ast(node->nodetype, 
+				    get_sem_tree_copy(node->l),
+				    get_sem_tree_copy(node->r));
+	return node_copy;
+}
 void search_processes(struct ast *a)
 {
 	if (a == NULL)
@@ -366,7 +378,7 @@ int apply_distributive_law(struct ast *a, struct ast *parent)
 	if (a->nodetype == SEM_PARLL ||
 	    a->nodetype == '|') {
 		if (a->l && a->l->nodetype == '+') {
-			if (parent->nodetype == '+') {
+			if (parent && parent->nodetype == '+') {
 				if (parent->l == a) {
 					struct ast *n1 = malloc(sizeof(struct ast));
 					n1->nodetype = '+';
@@ -385,7 +397,7 @@ int apply_distributive_law(struct ast *a, struct ast *parent)
 				}
 			}
 		} else if (a->r && a->r->nodetype == '+') {
-			if (parent->nodetype == '+') {
+			if (parent && parent->nodetype == '+') {
 				if (parent->l == a) {
 					struct ast *n1 = malloc(sizeof(struct ast));
 					n1->nodetype = '+';
@@ -668,6 +680,7 @@ int apply_equational_characterization(struct ast *a, struct ast *parent)
 			sprintf(buf, "%d" , ++last_eq_index);
 			struct ast *id = new_id(buf);
 			struct ast *n = new_ast(SEM_EQ, id, a->l->r);
+			equations[last_eq_index] = get_sem_tree_copy(a->l->r);
 			a->l->r = n;
 		} 
 		if (a->r && (a->r->nodetype == '^' || a->r->nodetype == '*')) {
@@ -675,6 +688,7 @@ int apply_equational_characterization(struct ast *a, struct ast *parent)
 			sprintf(buf, "%d" , ++last_eq_index);
 			struct ast *id = new_id(buf);
 			struct ast *n = new_ast(SEM_EQ, id, a->r->r);
+			equations[last_eq_index] = get_sem_tree_copy(a->r->r);
 			a->r->r = n;
 		}
 	}
@@ -842,45 +856,52 @@ void calc_apriori_semantics(struct ast *r)
 
 	remove_proc_node(sem_root, NULL);
 	
-	while(convert_par_composition(sem_root, NULL)) {
-		fprintf(yyout, " = \n\n+++ Convert parallel composition +++\n\n = ");
-		print_sem_equation(sem_root);
-		apply_distributive_law(sem_root, NULL);
-		fprintf(yyout, " = \n\n+++ Apply distibutive rule +++\n\n = ");
-		print_sem_equation(sem_root);
-		apply_axioms_for_communication(sem_root, NULL);
-		fprintf(yyout, " = \n\n+++ Apply axioms for communication +++\n\n = ");
-		print_sem_equation(sem_root);
-		apply_communication_rule(sem_root, NULL);
-		fprintf(yyout, " = \n\n+++ Apply communication rule +++\n\n = ");
-		print_sem_equation(sem_root);
-		int retval = 0;
-		do {
-			fprintf(yyout, " = \n\n+++ Apply basis axiom : ");
-			retval = apply_basis_axioms(sem_root, NULL);
-			fprintf(yyout, " +++\n\n = ");
+	equations[0] = sem_root;
+	int i = 1;
+	equations[i] = get_sem_tree_copy(sem_root);
+	for (i = 1; i <= 3; i ++) {
+		fprintf(yyout, " \nP(%d)", i);
+		while(convert_par_composition(equations[i], NULL)) {			
+			fprintf(yyout, " = \n\n+++ Convert parallel composition +++\n\n = ");
+			print_sem_equation(equations[i]);
+			apply_distributive_law(equations[i], NULL);
+			fprintf(yyout, " = \n\n+++ Apply distibutive rule +++\n\n = ");
 			print_sem_equation(sem_root);
-		} while (retval);
-		
-		apply_axioms_for_ll_operation(sem_root, NULL);
-		fprintf(yyout, " = \n\n+++ Apply axioms for operation LL +++\n\n = ");
-		print_sem_equation(sem_root);
-		
-		apply_encapsulation_operation(sem_root, NULL);
-		fprintf(yyout, " = \n\n+++ Apply encapsulation operation +++\n\n = ");
-		print_sem_equation(sem_root);
-		
-		do {
-			fprintf(yyout, " = \n\n+++ Apply basis axiom : ");
-			retval = apply_basis_axioms(sem_root, NULL);
-			fprintf(yyout, " +++\n\n = ");
-			print_sem_equation(sem_root);
-		} while (retval);
+			apply_axioms_for_communication(equations[i], NULL);
+			fprintf(yyout, " = \n\n+++ Apply axioms for communication +++\n\n = ");
+			print_sem_equation(equations[i]);
+			apply_communication_rule(equations[i], NULL);
+			fprintf(yyout, " = \n\n+++ Apply communication rule +++\n\n = ");
+			print_sem_equation(equations[i]);
+			int retval = 0;
+			do {
+				fprintf(yyout, " = \n\n+++ Apply basis axiom : ");
+				retval = apply_basis_axioms(equations[i], NULL);
+				fprintf(yyout, " +++\n\n = ");
+				print_sem_equation(equations[i]);
+			} while (retval);
+			
+			apply_axioms_for_ll_operation(equations[i], NULL);
+			fprintf(yyout, " = \n\n+++ Apply axioms for operation LL +++\n\n = ");
+			print_sem_equation(equations[i]);
+			
+			apply_encapsulation_operation(equations[i], NULL);
+			fprintf(yyout, " = \n\n+++ Apply encapsulation operation +++\n\n = ");
+			print_sem_equation(equations[i]);
+			
+			do {
+				fprintf(yyout, " = \n\n+++ Apply basis axiom : ");
+				retval = apply_basis_axioms(equations[i], NULL);
+				fprintf(yyout, " +++\n\n = ");
+				print_sem_equation(equations[i]);
+			} while (retval);
+		}
+		apply_equational_characterization(equations[i], NULL);
+		fprintf(yyout, " = \n\n+++ Apply equational_characterization +++\n\nP(%d) = ", i);
+		print_sem_equation(equations[i]);
+		fprintf(yyout, " \n\n//////////////////////////////////////////////////////////// \n\n", i);
 	}
-	apply_equational_characterization(sem_root, NULL);
-	fprintf(yyout, " = \n\n+++ Apply equational_characterization +++\n\n = ");
-	print_sem_equation(sem_root);
-
+	
 }
 
 void remove_proc_node(struct ast *a, struct ast *parent) 
