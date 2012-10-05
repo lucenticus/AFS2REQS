@@ -1,7 +1,7 @@
 #ifndef PARSER_AFS_H
 #define PARSER_AFS_H
 #define NHASH (9997)
-
+#define MAX_EQ (1024)
 #include <stdlib.h>
 
 enum NODETYPE {
@@ -79,6 +79,8 @@ struct ast *sem_root;
 struct proc_list *processes;
 struct proc_list *sem_processes;
 int last_eq_index = 1;
+struct ast *equations[MAX_EQ];
+
 struct symbol symtab[NHASH];
 struct symbol *lookup(char*);
 void addref(char*, int);
@@ -97,9 +99,18 @@ void search_processes(struct ast *a);
 struct ast* afs_to_sem(struct ast *a);
 void print_tree(struct ast *a);
 void print_sem_equation(struct ast *a);
+
+
+void remove_proc_node(struct ast *a, struct ast *parent);
+
 void convert_min_fixed_point(struct ast *a, struct ast *curr_proc);
 int convert_par_composition(struct ast *a, struct ast *parent);
-int apply_distributive_law(struct ast *a, struct ast *parent);
-void remove_proc_node(struct ast *a, struct ast *parent);
 int apply_equational_characterization(struct ast *a, struct ast *parent);
+int apply_distributive_law(struct ast *a, struct ast *parent);
+int apply_basis_axioms(struct ast *a, struct ast *parent);
+int apply_communication_rule(struct ast *a, struct ast *parent);
+int apply_axioms_for_communication(struct ast *a, struct ast *parent);
+int apply_encapsulation_operation(struct ast *a, struct ast *parent);
+int apply_axioms_for_ll_operation(struct ast *a, struct ast *parent);
+
 #endif /*PARSER_AFS_H*/
