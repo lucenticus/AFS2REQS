@@ -450,10 +450,23 @@ int apply_basis_axioms(struct ast *a, struct ast *parent)
 
 			return 1;
 		} else if (a->l && a->l->nodetype == '+') {
-			// (X + Y) * Z = X * Z + Y *Z
-			// TODO
-			fprintf(yyout, "(X + Y) * Z = X * Z + Y *Z");
-			return 0;
+			// (X + Y) * Z = X * Z + Y * Z
+			fprintf(yyout, "(X + Y) * Z = X * Z + Y * Z");
+			struct ast *left_add = new_ast(a->nodetype, a->l->l, a->r);
+			struct ast *right_add = new_ast(a->nodetype, a->l->r, a->r);
+			a->nodetype = '+';
+			a->l = left_add;
+			a->r = right_add;		       
+			return 1;
+		} else if (a->r && a->r->nodetype == '+') {
+			// X * (Y + Z) = X * Y + X * Z
+			fprintf(yyout, "X * (Y + Z) = X * Y + X * Z");
+			struct ast *left_add = new_ast(a->nodetype, a->l, a->r->l);
+			struct ast *right_add = new_ast(a->nodetype, a->l, a->r->r);
+			a->nodetype = '+';
+			a->l = left_add;
+			a->r = right_add;		       
+			return 1;
 		} else if (a->l && a->l->nodetype == '^') {
 			// (b ^ X) * Y = b ^ (X * Y)
 			fprintf(yyout, "(b ^ X) * Y = b ^ (X * Y)");
@@ -628,8 +641,6 @@ int apply_axioms_for_ll_operation(struct ast *a, struct ast *parent)
 			a->nodetype = a->l->nodetype;
 			a->l = a->l->l;
 			a->r = n;
-			fprintf(yyout, " = \n\n+++ Apply axioms for operation LL +++\n\n = ");
-			print_sem_equation(sem_root);
 		}
 		
 	}
@@ -887,6 +898,37 @@ void convert_min_fixed_point(struct ast *a, struct ast *curr_proc)
 	convert_min_fixed_point(a->l, curr_proc);	
 	convert_min_fixed_point(a->r, curr_proc);
 }
+void expand_needed_equations(struct ast *a) 
+{
+	if (a == NULL)
+		return;
+	if (a->nodetype == SEM_PAR) {
+		if (a->l && !is_exist_communication_op(a->l)) {
+			expand_substitutions(a->l);
+		}
+		if (a->r && a->r->nodetype != SEM_PAR && !is_exist_communication_op(a->r)) {
+			expand_substitutions(a->r);
+		}
+	}
+ 	expand_needed_equations(a->l); 
+	expand_needed_equations(a->r); 
+}
+int is_exist_communication_op(struct ast *a) 
+{
+	if (a == NULL)
+		return 0;
+	if (a->nodetype == SEM_IN || 
+	    a->nodetype == SEM_CIN || 
+	    a->nodetype == SEM_OUT || 
+	    a->nodetype == SEM_COUT) {
+		return 1;
+	}
+	if (is_exist_communication_op(a->l))
+		return 1;
+	if (is_exist_communication_op(a->r))
+		return 1;
+	return 0;
+}
 void expand_substitutions(struct ast *a) 
 {
 	if (a == NULL)
@@ -987,20 +1029,26 @@ void calc_apriori_semantics(struct ast *r)
 	remove_proc_node(sem_root, NULL);
 	fprintf(yyout, " = \n\n = ");
 	print_sem_equation(sem_root);	
-
-
 	
 	equations[0] = sem_root;
 	int i = 1;
 	equations[i] = get_sem_tree_copy(sem_root);
 	for (i = 1; i <= 16; i ++) {
 		if (i > 1) 
-			expand_substitutions(equations[i]);
+			//expand_substitutions(equations[i]);
+			expand_needed_equations(equations[i]);
 		fprintf(yyout, " \nP(%d) = ", i);
 		print_sem_equation(equations[i]);
 		while(convert_par_composition(equations[i], NULL)) {			
 			fprintf(yyout, " = \n\n+++ Convert parallel composition +++\n\n = ");
 			print_sem_equation(equations[i]);
+			int retval = 0;
+			do {
+				fprintf(yyout, " = \n\n+++ Apply basis axiom : ");
+				retval = apply_basis_axioms(equations[i], NULL);
+				fprintf(yyout, " +++\n\n = ");
+				print_sem_equation(equations[i]);
+			} while (retval);
 			apply_distributive_law(equations[i], NULL);
 			fprintf(yyout, " = \n\n+++ Apply distibutive rule +++\n\n = ");
 			print_sem_equation(equations[i]);
@@ -1010,7 +1058,6 @@ void calc_apriori_semantics(struct ast *r)
 			apply_communication_rule(equations[i], NULL);
 			fprintf(yyout, " = \n\n+++ Apply communication rule +++\n\n = ");
 			print_sem_equation(equations[i]);
-			int retval = 0;
 			do {
 				fprintf(yyout, " = \n\n+++ Apply basis axiom : ");
 				retval = apply_basis_axioms(equations[i], NULL);
@@ -1215,7 +1262,9 @@ void print_sem_equation(struct ast *a)
 		    a->nodetype == '*') {
 		if (a->l && 
 		    (a->l->nodetype == '|' ||
-		     a->l->nodetype == SEM_PAR)
+		     a->l->nodetype == SEM_PAR ||
+		     a->r->nodetype == SEM_PARLL ||
+		     a->l->nodetype == '+' )
 		    ) {
 			fprintf(yyout, "( ");
 			print_sem_equation(a->l);
@@ -1225,7 +1274,9 @@ void print_sem_equation(struct ast *a)
 		fprintf(yyout, " %c ", a->nodetype);
 		if (a->r && 
 		    (a->r->nodetype == '|' ||
-		     a->r->nodetype == SEM_PAR)
+		     a->r->nodetype == SEM_PAR ||
+		     a->r->nodetype == SEM_PARLL ||
+		     a->r->nodetype == '+' )
 		    ) {
 			fprintf(yyout, "( ");
 			print_sem_equation(a->r);
@@ -1234,6 +1285,7 @@ void print_sem_equation(struct ast *a)
 			print_sem_equation(a->r);
 	} else if (a->nodetype == '+' ||
 		   a->nodetype == 'U' ) {
+		
 		print_sem_equation(a->l);
 		fprintf(yyout, " %c ", a->nodetype);
 		print_sem_equation(a->r);
