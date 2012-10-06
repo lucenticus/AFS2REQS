@@ -458,7 +458,7 @@ int apply_basis_axioms(struct ast *a, struct ast *parent)
 			a->l = left_add;
 			a->r = right_add;		       
 			return 1;
-		} else if (a->r && a->r->nodetype == '+') {
+		} /*else if (a->r && a->r->nodetype == '+') {
 			// X * (Y + Z) = X * Y + X * Z
 			fprintf(yyout, "X * (Y + Z) = X * Y + X * Z");
 			struct ast *left_add = new_ast(a->nodetype, a->l, a->r->l);
@@ -467,7 +467,7 @@ int apply_basis_axioms(struct ast *a, struct ast *parent)
 			a->l = left_add;
 			a->r = right_add;		       
 			return 1;
-		} else if (a->l && a->l->nodetype == '^') {
+		} */ else if (a->l && a->l->nodetype == '^') {
 			// (b ^ X) * Y = b ^ (X * Y)
 			fprintf(yyout, "(b ^ X) * Y = b ^ (X * Y)");
 			// TODO
@@ -502,7 +502,43 @@ int apply_basis_axioms(struct ast *a, struct ast *parent)
 			a->l = a->l->l;
 
 			return 1;
-		} 
+		} else if (a->l && a->l->nodetype == '^' &&
+			   a->r && a->r->nodetype == '^' || 
+			   a->l && a->l->nodetype == '*' &&
+			   a->r && a->r->nodetype == '*') {
+			// b ^ X + b ^ Y = b ^ (X + Y)
+			// a * X + a * Y = a * (X + Y)
+
+			int val = 1;
+			is_equal_subtree(a->l->l, a->r->l, &val);
+			if (val == 1) {
+				fprintf(yyout, "b ^ X + b ^ Y = b ^ (X + Y) or ");
+				fprintf(yyout, "a * X + a * Y = a * (X + Y)");
+				a->nodetype = a->l->nodetype;
+				a->r = new_ast('+', a->l->r, a->r->r);
+				a->l = a->l->l;
+
+				return 1;
+			}
+		} else if (a->l && a->l->nodetype == '^' &&
+			   a->r && a->r->nodetype == '+' &&
+			   a->r->l && a->r->l->nodetype == '^' || 
+			   a->l && a->l->nodetype == '*' &&
+			   a->r && a->r->nodetype == '+' ||
+			   a->r->l && a->r->l->nodetype == '*' ) {
+			// b ^ X + b ^ Y = b ^ (X + Y)
+			// a * X + a * Y = a * (X + Y)
+
+			int val = 1;
+			is_equal_subtree(a->l->l, a->r->l->l, &val);
+			if (val == 1) {
+				fprintf(yyout, "b ^ X + b ^ Y = b ^ (X + Y) or ");
+				fprintf(yyout, "a * X + a * Y = a * (X + Y)");
+				a->l->r = new_ast(a->nodetype, a->l->r, a->r->l->r);
+				a->r = a->r->r;
+				return 1;
+			}
+		}
 	} else if (a->nodetype == SEM_PAR) {
 		if (a->l && a->l->nodetype == SEM_TAU) {
 			// tau || X = X
@@ -1039,10 +1075,11 @@ void calc_apriori_semantics(struct ast *r)
 			expand_needed_equations(equations[i]);
 		fprintf(yyout, " \nP(%d) = ", i);
 		print_sem_equation(equations[i]);
+		int retval = 0;
 		while(convert_par_composition(equations[i], NULL)) {			
 			fprintf(yyout, " = \n\n+++ Convert parallel composition +++\n\n = ");
 			print_sem_equation(equations[i]);
-			int retval = 0;
+
 			do {
 				fprintf(yyout, " = \n\n+++ Apply basis axiom : ");
 				retval = apply_basis_axioms(equations[i], NULL);
@@ -1084,7 +1121,13 @@ void calc_apriori_semantics(struct ast *r)
 		reduce_substitutions(equations[i]);
 		fprintf(yyout, " = \n\n+++ Reduce equations  +++\n\n");
 		print_sem_equation(equations[i]);
-
+		
+		do {
+			fprintf(yyout, " = \n\n+++ Apply basis axiom : ");
+			retval = apply_basis_axioms(equations[i], NULL);
+			fprintf(yyout, " +++\n\n = ");
+			print_sem_equation(equations[i]);
+		} while (retval);
 		apply_equational_characterization(equations[i], NULL);
 		fprintf(yyout, " = \n\n+++ Apply equational_characterization +++\n\nP(%d) = ", i);
 		print_sem_equation(equations[i]);
