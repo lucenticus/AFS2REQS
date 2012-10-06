@@ -146,6 +146,15 @@ struct ast * get_sem_tree_copy(struct ast *node)
 		struct term_id *id = (struct term_id *) node;
 		return new_id(id->name);
 	}
+	/*
+	if (node->nodetype == SEM_CPROC ||
+	    node->nodetype == SEM_PROC) {
+		return NULL;
+	}
+	if (node->nodetype == SEM_EQ) {
+		return NULL;
+		}*/
+	
 	struct ast *node_copy = new_ast(node->nodetype, 
 				    get_sem_tree_copy(node->l),
 				    get_sem_tree_copy(node->r));
@@ -678,7 +687,6 @@ int apply_axioms_for_ll_operation(struct ast *a, struct ast *parent)
 			a->l = a->l->l;
 			a->r = n;
 		}
-		
 	}
 	apply_axioms_for_ll_operation(a->l, a);
 	apply_axioms_for_ll_operation(a->r, a);
@@ -839,26 +847,21 @@ void convert_min_fixed_point(struct ast *a, struct ast *curr_proc)
 			       
 			} 
 			struct ast *tmp = a->l->r;
-			while (tmp->r != NULL && 
-			       (tmp->r->nodetype == '*' || 
-				tmp->r->nodetype == '+' || 
-				tmp->r->nodetype == '^')) {
+			while (tmp && 
+			       (tmp->nodetype == '*' || 
+				tmp->nodetype == '+' || 
+				tmp->nodetype == '^')) {
 				tmp = tmp->r;					
 			} 
 			if (tmp == NULL) {
 				printf("\nERROR in convert_min_fixed_point: can't find right operand");
 				return;
 			}
-			struct ast * proc_comp = malloc(sizeof(struct ast));
-			proc_comp->nodetype = '*';
-			proc_comp->l = tmp->r;
-			struct  ast* pr = malloc(sizeof(struct ast));
-			pr->nodetype = curr_proc->nodetype;
-			pr->l = curr_proc->l;
-			pr->r = NULL;
-
-			proc_comp->r = pr;
-			tmp->r = proc_comp;
+			struct ast * pr = new_ast(curr_proc->nodetype, curr_proc->l, NULL);
+			struct ast * cp = get_sem_tree_copy(tmp);
+			tmp->nodetype = '*';
+			tmp->r = pr;
+			tmp->l = cp;
 
 				
 			if (subst == NULL) {
@@ -898,14 +901,8 @@ void convert_min_fixed_point(struct ast *a, struct ast *curr_proc)
 				printf("\nERROR in convert_min_fixed_point: can't find right operand");
 				return;
 			}
-			struct ast * proc_comp = malloc(sizeof(struct ast));
-			proc_comp->nodetype = '*';
-			proc_comp->l = tmp->r;
-			struct ast * pr = malloc(sizeof(struct ast));
-			pr->nodetype = curr_proc->nodetype;
-			pr->l = curr_proc->l;
-			pr->r = NULL;
-			
+			struct  ast* pr = new_ast(curr_proc->nodetype, curr_proc->l, NULL);						
+			struct ast * proc_comp = new_ast('*', tmp->r, pr);
 			
 			proc_comp->r = pr;
 			tmp->r = proc_comp;
@@ -972,9 +969,6 @@ void expand_substitutions(struct ast *a)
 	if (a->nodetype == SEM_PROC || a->nodetype == SEM_CPROC) {
 		struct subst_list *tmp = subst;
 		while (tmp) {
-			//fprintf(yyout, " = \n\n !!!!!= ");
-			//print_sem_equation(tmp->p);
-			//fprintf(yyout, " !!!!! = \n\n = ");
 			if (tmp->p && tmp->p->nodetype == a->nodetype &&
 			    tmp->p->l && tmp->p->r && a->l) {
 				if (strcmp(((struct term_id *)tmp->p->l)->name, 
@@ -1128,6 +1122,10 @@ void calc_apriori_semantics(struct ast *r)
 			fprintf(yyout, " +++\n\n = ");
 			print_sem_equation(equations[i]);
 		} while (retval);
+		apply_axioms_for_ll_operation(equations[i], NULL);
+		fprintf(yyout, " = \n\n+++ Apply axioms for operation LL +++\n\n = ");
+		print_sem_equation(equations[i]);
+
 		apply_equational_characterization(equations[i], NULL);
 		fprintf(yyout, " = \n\n+++ Apply equational_characterization +++\n\nP(%d) = ", i);
 		print_sem_equation(equations[i]);
@@ -1260,6 +1258,7 @@ void print_sem_equation(struct ast *a)
 			fprintf(yyout, " )");
 		} else 
 			print_sem_equation(a->l);
+		
 		fprintf(yyout, " || \n || ");
 		if (a->r && a->r->nodetype == '+') {
 			fprintf(yyout, "( ");
@@ -1268,14 +1267,16 @@ void print_sem_equation(struct ast *a)
 		} else 
 			print_sem_equation(a->r);
 	} else if (a->nodetype == SEM_PARLL) {
-		if (a->l && a->l->nodetype == '+') {
+		if (a->l && a->l->nodetype == '+' ||
+		    a->l && a->l->nodetype == '*' ) {			
 			fprintf(yyout, "( ");
 			print_sem_equation(a->l);
 			fprintf(yyout, " )");
 		} else 
 			print_sem_equation(a->l);
 		fprintf(yyout, " LL \n LL ");
-		if (a->r && a->r->nodetype == '+') {
+		if (a->r && a->r->nodetype == '+' ||
+		    a->r && a->r->nodetype == '*') {
 			fprintf(yyout, "( ");
 			print_sem_equation(a->r);
 			fprintf(yyout, " )");
@@ -1306,7 +1307,7 @@ void print_sem_equation(struct ast *a)
 		if (a->l && 
 		    (a->l->nodetype == '|' ||
 		     a->l->nodetype == SEM_PAR ||
-		     a->r->nodetype == SEM_PARLL ||
+		     a->l->nodetype == SEM_PARLL ||
 		     a->l->nodetype == '+' )
 		    ) {
 			fprintf(yyout, "( ");
