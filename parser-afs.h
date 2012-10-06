@@ -78,12 +78,16 @@ struct subst_list {
 	struct ast *p;
 	struct subst_list *next;
 };
+
+int logging = 0;
 struct ast *root;
 struct ast *sem_root;
 struct proc_list *processes;
 struct proc_list *sem_processes;
 struct subst_list *subst;
 int last_eq_index = 1;
+
+struct proc_list *eq_proc[MAX_EQ];
 struct ast *equations[MAX_EQ];
 
 struct symbol symtab[NHASH];

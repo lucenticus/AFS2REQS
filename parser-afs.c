@@ -138,6 +138,39 @@ void print_tree(struct ast *a)
 	print_tree(a->l);
 	print_tree(a->r);
 }
+void get_proc_list(struct ast *a) 
+{
+	if (a == NULL)
+		return;
+	if (a->nodetype == SEM_PAR) {
+		if (a->l && a->l->nodetype != SEM_PAR) {
+			if (processes == NULL) {				
+				processes = malloc(sizeof(struct proc_list));
+				processes->proc = a->l;
+				processes->next = NULL;
+			} else {
+				struct proc_list *n = malloc(sizeof(struct proc_list));
+				n->proc = a->l;
+				n->next = processes;
+				processes = n;
+			}
+		}
+		if (a->r && a->r->nodetype != SEM_PAR) {
+			if (processes == NULL) {				
+				processes = malloc(sizeof(struct proc_list));
+				processes->proc = a->r;
+				processes->next = NULL;
+			} else {
+				struct proc_list *n = malloc(sizeof(struct proc_list));
+				n->proc = a->r;
+				n->next = processes;
+				processes = n;
+			}
+		}
+	}
+	get_proc_list(a->l);
+	get_proc_list(a->r);
+}
 struct ast * get_sem_tree_copy(struct ast *node) 
 {
 	if (node == NULL)
@@ -146,15 +179,6 @@ struct ast * get_sem_tree_copy(struct ast *node)
 		struct term_id *id = (struct term_id *) node;
 		return new_id(id->name);
 	}
-	/*
-	if (node->nodetype == SEM_CPROC ||
-	    node->nodetype == SEM_PROC) {
-		return NULL;
-	}
-	if (node->nodetype == SEM_EQ) {
-		return NULL;
-		}*/
-	
 	struct ast *node_copy = new_ast(node->nodetype, 
 				    get_sem_tree_copy(node->l),
 				    get_sem_tree_copy(node->r));
@@ -725,6 +749,49 @@ int apply_encapsulation_operation(struct ast *a, struct ast *parent)
 	apply_encapsulation_operation(a->r, a);
 	return 0;
 }
+void print_proc_list(struct ast *a) 
+{
+	processes = NULL;
+	get_proc_list(a);
+	struct proc_list *p = processes;
+	while(p) {
+		print_sem_equation(p->proc);
+		p = p->next;
+	}
+}
+int compare_proc_list(struct ast *a) 
+{
+	processes = NULL;
+	get_proc_list(a);
+	
+	struct proc_list *p = processes;
+	int i = 1;
+	for (i = 1; i < last_eq_index; i++) {		
+		struct proc_list *tmp = p;
+		struct proc_list *tmp2 = eq_proc[i];
+		int is_eq = 1;
+		while(tmp && is_eq) {
+			int val = 1;
+			while (tmp2) {
+				val = 1;
+				is_equal_subtree(tmp->proc, tmp2->proc, &val);
+				if (val == 0)
+					tmp2 = tmp2->next;
+				else
+					break;
+				
+			}
+			if (val)
+				tmp = tmp->next;
+			else
+				is_eq = 0;
+			
+		}
+		if (is_eq) 
+			return i;
+	}
+	return -1;
+}
 int apply_equational_characterization(struct ast *a, struct ast *parent)
 {
 	if (a == NULL)
@@ -735,6 +802,13 @@ int apply_equational_characterization(struct ast *a, struct ast *parent)
 			sprintf(buf, "%d" , ++last_eq_index);
 			struct ast *id = new_id(buf);
 			struct ast *n = new_ast(SEM_EQ, id, a->l->r);
+			/*int indx = compare_proc_list(a->l->r);
+			if (indx == -1) 
+				indx = last_eq_index;
+			equations[indx] = get_sem_tree_copy(a->l->r);
+			processes = NULL;
+			get_proc_list(a->l->r);
+			eq_proc[indx] = processes;*/
 			equations[last_eq_index] = get_sem_tree_copy(a->l->r);
 			a->l->r = n;
 		} 
@@ -742,6 +816,14 @@ int apply_equational_characterization(struct ast *a, struct ast *parent)
 			sprintf(buf, "%d" , ++last_eq_index);
 			struct ast *id = new_id(buf);
 			struct ast *n = new_ast(SEM_EQ, id, a->r->r);
+			/*int indx = compare_proc_list(a->r->r);
+			if (indx == -1) 
+				indx = last_eq_index;
+			equations[indx] = get_sem_tree_copy(a->r->r);
+			processes = NULL;
+			get_proc_list(a->r->r);
+			eq_proc[indx] = processes;
+			*/
 			equations[last_eq_index] = get_sem_tree_copy(a->r->r);
 			a->r->r = n;
 		}
@@ -749,6 +831,13 @@ int apply_equational_characterization(struct ast *a, struct ast *parent)
 		sprintf(buf, "%d" , ++last_eq_index);
 		struct ast *id = new_id(buf);
 		struct ast *n = new_ast(SEM_EQ, id, a->r);
+		/*int indx = compare_proc_list(a->r);
+		if (indx == -1) 
+			indx = last_eq_index;
+		equations[indx] = get_sem_tree_copy(a->r);
+		processes = NULL;
+		get_proc_list(a->r);
+		eq_proc[indx] = processes;*/
 		equations[last_eq_index] = get_sem_tree_copy(a->r);
 		a->r = n;
 
@@ -1071,6 +1160,7 @@ void calc_apriori_semantics(struct ast *r)
 		print_sem_equation(equations[i]);
 		int retval = 0;
 		while(convert_par_composition(equations[i], NULL)) {			
+			
 			fprintf(yyout, " = \n\n+++ Convert parallel composition +++\n\n = ");
 			print_sem_equation(equations[i]);
 
@@ -1125,7 +1215,7 @@ void calc_apriori_semantics(struct ast *r)
 		apply_axioms_for_ll_operation(equations[i], NULL);
 		fprintf(yyout, " = \n\n+++ Apply axioms for operation LL +++\n\n = ");
 		print_sem_equation(equations[i]);
-
+		
 		apply_equational_characterization(equations[i], NULL);
 		fprintf(yyout, " = \n\n+++ Apply equational_characterization +++\n\nP(%d) = ", i);
 		print_sem_equation(equations[i]);
