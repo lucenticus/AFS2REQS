@@ -761,7 +761,7 @@ int compare_proc_list(struct ast *a)
 	int i = 1;
 	for (i = 1; i < last_eq_index; i++) {		
 		struct proc_list *tmp = p;
-		struct proc_list *tmp2 = eq_proc[i];
+		struct proc_list *tmp2 = initial_equations[i];
 		int is_eq = 1;
 		while(tmp && is_eq) {
 			while (tmp2) {
@@ -769,13 +769,11 @@ int compare_proc_list(struct ast *a)
 					tmp2 = tmp2->next;
 				else
 					break;
-				
 			}
 			if (is_equal_subtree(tmp->proc, tmp2->proc))
 				tmp = tmp->next;
 			else
-				is_eq = 0;
-			
+				is_eq = 0;			
 		}
 		if (is_eq) 
 			return i;
@@ -784,20 +782,27 @@ int compare_proc_list(struct ast *a)
 }
 int designate_equation(struct ast **a) 
 {
-	char buf[10] = {0};
-	sprintf(buf, "%d" , ++last_eq_index);
-	struct ast *id = new_id(buf);
-	struct ast *n = new_ast(SEM_EQ, id, *a);
-	print_proc_list(*a);
-	/*int indx = compare_proc_list(a->l->r);
-	  if (indx == -1) 
-	  indx = last_eq_index;
-	  equations[indx] = get_sem_tree_copy(a->l->r);
-	  processes = NULL;
-	  get_proc_list(a->l->r);
-	  eq_proc[indx] = processes;*/
-	equations[last_eq_index] = get_sem_tree_copy(*a);
-	*a = n;
+	int indx = compare_proc_list(*a);
+	if (indx == -1) {
+		char buf[10] = {0};
+		sprintf(buf, "%d" , ++last_eq_index);
+		struct ast *id = new_id(buf);
+		struct ast *n = new_ast(SEM_EQ, id, *a);
+		indx = last_eq_index;
+		equations[indx] = get_sem_tree_copy(*a);
+		*a = n;
+		struct proc_list *p = NULL;
+		get_proc_list(*a, &p);
+		initial_equations[indx] = p;
+	} else {
+		char buf[10] = {0};
+		sprintf(buf, "%d" , indx);
+		struct ast *id = new_id(buf);
+		struct ast *n = new_ast(SEM_EQ, id, *a);
+		*a = n;
+		initial_equations[last_eq_index] = initial_equations[indx];
+	}
+
 	return 1;
 }
 int apply_equational_characterization(struct ast *a, struct ast *parent)
@@ -1117,8 +1122,12 @@ void calc_apriori_semantics(struct ast *r)
 	
 	equations[0] = sem_root;
 	int i = 1;
-	equations[i] = get_sem_tree_copy(sem_root);
+	equations[1] = get_sem_tree_copy(sem_root);
+
 	for (i = 1; i <= 16; i ++) {
+		struct proc_list *p = NULL;
+		get_proc_list(equations[i], &p);
+		initial_equations[i] = p;
 		if (i > 1) 
 			expand_needed_equations(equations[i]);
 		fprintf(yyout, " \nP(%d) = ", i);
