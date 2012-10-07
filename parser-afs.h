@@ -126,4 +126,6 @@ void expand_substitutions(struct ast *a);
 void reduce_substitutions(struct ast *a);
 int is_equal_subtree(struct ast *a, struct ast *b);
 int is_exist_communication_op(struct ast *a);
+void get_proc_list(struct ast *a, struct proc_list **p);
+void add_to_proc_list(struct proc_list **p, struct ast * a);
 #endif /*PARSER_AFS_H*/

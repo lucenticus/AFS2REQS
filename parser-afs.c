@@ -138,39 +138,7 @@ void print_tree(struct ast *a)
 	print_tree(a->l);
 	print_tree(a->r);
 }
-void get_proc_list(struct ast *a) 
-{
-	if (a == NULL)
-		return;
-	if (a->nodetype == SEM_PAR) {
-		if (a->l && a->l->nodetype != SEM_PAR) {
-			if (processes == NULL) {				
-				processes = malloc(sizeof(struct proc_list));
-				processes->proc = a->l;
-				processes->next = NULL;
-			} else {
-				struct proc_list *n = malloc(sizeof(struct proc_list));
-				n->proc = a->l;
-				n->next = processes;
-				processes = n;
-			}
-		}
-		if (a->r && a->r->nodetype != SEM_PAR) {
-			if (processes == NULL) {				
-				processes = malloc(sizeof(struct proc_list));
-				processes->proc = a->r;
-				processes->next = NULL;
-			} else {
-				struct proc_list *n = malloc(sizeof(struct proc_list));
-				n->proc = a->r;
-				n->next = processes;
-				processes = n;
-			}
-		}
-	}
-	get_proc_list(a->l);
-	get_proc_list(a->r);
-}
+
 struct ast * get_sem_tree_copy(struct ast *node) 
 {
 	if (node == NULL)
@@ -746,20 +714,50 @@ int apply_encapsulation_operation(struct ast *a, struct ast *parent)
 }
 void print_proc_list(struct ast *a) 
 {
-	processes = NULL;
-	get_proc_list(a);
-	struct proc_list *p = processes;
+	struct proc_list *p = NULL;
+	get_proc_list(a, &p);      
+	fprintf(yyout, "\n Proc_list \n");
 	while(p) {
+		fprintf(yyout, "\n ++++++++++ \n");
 		print_sem_equation(p->proc);
 		p = p->next;
 	}
+	fprintf(yyout, "\n End proc list \n");
 }
+void add_to_proc_list(struct proc_list **p, struct ast * a) 
+{
+	if (*p == NULL) {				
+		*p = malloc(sizeof(struct proc_list));
+		(*p)->proc = a;
+		(*p)->next = NULL;
+	} else {
+		struct proc_list *n = malloc(sizeof(struct proc_list));
+		n->proc = a;
+		n->next = *p;
+		*p = n;
+	}
+}
+void get_proc_list(struct ast *a, struct proc_list **p)  
+{
+	if (a == NULL)
+		return;
+	if (a->nodetype == SEM_PAR) {
+		if (a->l && a->l->nodetype != SEM_PAR) {
+			add_to_proc_list(p, a->l);
+		}
+		if (a->r && a->r->nodetype != SEM_PAR) {
+			add_to_proc_list(p, a->r);
+		}
+	}
+	get_proc_list(a->l, p);
+	get_proc_list(a->r, p);
+}
+
 int compare_proc_list(struct ast *a) 
 {
-	processes = NULL;
-	get_proc_list(a);
+	struct proc_list *p = NULL;
+	get_proc_list(a, &p);
 	
-	struct proc_list *p = processes;
 	int i = 1;
 	for (i = 1; i < last_eq_index; i++) {		
 		struct proc_list *tmp = p;
@@ -790,6 +788,7 @@ int designate_equation(struct ast **a)
 	sprintf(buf, "%d" , ++last_eq_index);
 	struct ast *id = new_id(buf);
 	struct ast *n = new_ast(SEM_EQ, id, *a);
+	print_proc_list(*a);
 	/*int indx = compare_proc_list(a->l->r);
 	  if (indx == -1) 
 	  indx = last_eq_index;
