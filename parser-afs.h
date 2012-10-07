@@ -124,6 +124,6 @@ int apply_axioms_for_ll_operation(struct ast *a, struct ast *parent);
 
 void expand_substitutions(struct ast *a);
 void reduce_substitutions(struct ast *a);
-void is_equal_subtree(struct ast *a, struct ast *b, int * val);
+int is_equal_subtree(struct ast *a, struct ast *b);
 int is_exist_communication_op(struct ast *a);
 #endif /*PARSER_AFS_H*/

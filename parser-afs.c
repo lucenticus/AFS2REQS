@@ -542,15 +542,12 @@ int apply_basis_axioms(struct ast *a, struct ast *parent)
 			// b ^ X + b ^ Y = b ^ (X + Y)
 			// a * X + a * Y = a * (X + Y)
 
-			int val = 1;
-			is_equal_subtree(a->l->l, a->r->l, &val);
-			if (val == 1) {
+			if (is_equal_subtree(a->l->l, a->r->l)) {
 				fprintf(yyout, "b ^ X + b ^ Y = b ^ (X + Y) or ");
 				fprintf(yyout, "a * X + a * Y = a * (X + Y)");
 				a->nodetype = a->l->nodetype;
 				a->r = new_ast('+', a->l->r, a->r->r);
 				a->l = a->l->l;
-
 				return 1;
 			}
 		} else if (a->l && a->l->nodetype == '^' &&
@@ -562,9 +559,7 @@ int apply_basis_axioms(struct ast *a, struct ast *parent)
 			// b ^ X + b ^ Y = b ^ (X + Y)
 			// a * X + a * Y = a * (X + Y)
 
-			int val = 1;
-			is_equal_subtree(a->l->l, a->r->l->l, &val);
-			if (val == 1) {
+			if (is_equal_subtree(a->l->l, a->r->l->l)) {
 				fprintf(yyout, "b ^ X + b ^ Y = b ^ (X + Y) or ");
 				fprintf(yyout, "a * X + a * Y = a * (X + Y)");
 				a->l->r = new_ast(a->nodetype, a->l->r, a->r->l->r);
@@ -771,17 +766,14 @@ int compare_proc_list(struct ast *a)
 		struct proc_list *tmp2 = eq_proc[i];
 		int is_eq = 1;
 		while(tmp && is_eq) {
-			int val = 1;
 			while (tmp2) {
-				val = 1;
-				is_equal_subtree(tmp->proc, tmp2->proc, &val);
-				if (val == 0)
+				if (is_equal_subtree(tmp->proc, tmp2->proc))
 					tmp2 = tmp2->next;
 				else
 					break;
 				
 			}
-			if (val)
+			if (is_equal_subtree(tmp->proc, tmp2->proc))
 				tmp = tmp->next;
 			else
 				is_eq = 0;
@@ -1083,9 +1075,7 @@ void reduce_substitutions(struct ast *a)
 	while (tmp) {
 	
 		if (tmp->p && tmp->p->r->nodetype == a->nodetype) {
-			int val = 1;
-			is_equal_subtree(tmp->p->r, a, &val);
-			if (val == 1) { 
+			if (is_equal_subtree(tmp->p->r, a)) { 
 				/*fprintf(yyout, " EQUALS");
 				fprintf(yyout, "\n!!!! Comparison: ");
 				print_sem_equation(tmp->p->r);
@@ -1102,29 +1092,30 @@ void reduce_substitutions(struct ast *a)
 	reduce_substitutions(a->l);
 	reduce_substitutions(a->r);
 }
-void is_equal_subtree(struct ast *a, struct ast *b, int *val) {
+int is_equal_subtree(struct ast *a, struct ast *b) {
 	if (a == NULL && b == NULL)
-		return;
+		return 1;
 
 	if (a == NULL && b != NULL || a != NULL && b == NULL) {
-		*val = 0;
-		return;
+		return 0;
 	}
 
 	
 	if (a->nodetype != b->nodetype) {
-		*val = 0;
-		return;
+		return 0;
 	}
 	if (a->nodetype == b->nodetype &&
 	    a->nodetype == NODE_ID &&
 	    strcmp(((struct term_id *)a)->name,((struct term_id *)b)->name) != 0) {
-		*val = 0;
 		return;
 	}
 	
-	is_equal_subtree(a->l, b->l, val);
-	is_equal_subtree(a->r, b->r, val);
+	if (is_equal_subtree(a->l, b->l) == 0)
+		return 0;
+
+	if (is_equal_subtree(a->r, b->r) == 0)
+		return 0;
+	return 1;
 }
 void calc_apriori_semantics(struct ast *r) 
 {
