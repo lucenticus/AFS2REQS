@@ -72,6 +72,7 @@ struct symbol {
 struct proc_list {
 	struct ast *proc;
 	struct proc_list *next;
+	struct ast *first_comm;
 };
 
 struct subst_list {

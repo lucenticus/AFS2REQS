@@ -837,6 +837,84 @@ int apply_equational_characterization(struct ast *a, struct ast *parent)
 	apply_equational_characterization(a->r, a);
 	return 0;
 }
+struct ast * find_first_communication_node(struct ast *a) 
+{
+	if (a == NULL)
+		return NULL;
+	if (a->nodetype == SEM_CIN ||
+	    a->nodetype == SEM_COUT ||
+	    a->nodetype == SEM_IN || 
+	    a->nodetype == SEM_OUT ) {
+		return a;
+	}
+	struct ast *tmp = NULL;
+	if ((tmp = find_first_communication_node(a->l)) != NULL)
+		return tmp;
+	if ((tmp = find_first_communication_node(a->r)) != NULL)
+		return tmp;
+	
+}
+struct ast *build_optimizing_tree(struct proc_list *p) 
+{
+	struct proc_list *tmp1 = p;
+	struct proc_list *first = NULL;
+	struct proc_list *second = NULL;
+	while (tmp1 && !first) {
+		if (!tmp1->first_comm) {
+			tmp1 = tmp1->next;
+			continue;
+		}			
+		struct proc_list *tmp2 = p;
+		while (tmp2 && !first) {
+			if (!tmp2->first_comm ||
+			    tmp1 == tmp2) {
+				tmp2 = tmp2->next;
+				continue;
+			}
+			
+			if ((tmp1->first_comm->nodetype == SEM_CIN && tmp2->first_comm->nodetype == SEM_OUT ||
+			     tmp2->first_comm->nodetype == SEM_CIN && tmp1->first_comm->nodetype == SEM_OUT ||
+			     tmp2->first_comm->nodetype == SEM_COUT && tmp1->first_comm->nodetype == SEM_IN ||
+			     tmp1->first_comm->nodetype == SEM_COUT && tmp2->first_comm->nodetype == SEM_IN) &&
+			    is_equal_subtree(tmp1->first_comm->l, tmp2->first_comm->l) &&
+			    is_equal_subtree(tmp1->first_comm->r, tmp2->first_comm->r)) {
+				first = tmp1;
+				second = tmp2;
+			}
+			tmp2 = tmp2->next;
+		}
+		tmp1 = tmp1->next;
+	}
+	if (first) {
+		fprintf(yyout, "\n{{ ");
+		print_sem_equation(first->first_comm);
+		fprintf(yyout, ",  ");
+		print_sem_equation(second->first_comm);
+		fprintf(yyout, " }}\n");
+	}
+	return NULL;
+}
+int combining_par_composition(struct ast *a) 
+{
+	struct proc_list *p = NULL;
+	get_proc_list(a, &p);
+	struct proc_list *tmp = p;
+	while (tmp) {
+		struct ast *comm_node = find_first_communication_node(tmp->proc);
+		if (comm_node == NULL) {
+			expand_substitutions(tmp->proc);
+			comm_node = find_first_communication_node(tmp->proc);
+		}
+		tmp->first_comm = comm_node;
+		fprintf(yyout, "\n ||| ");
+		print_sem_equation(comm_node);
+		fprintf(yyout, " ||| \n");
+		tmp = tmp->next;
+	}
+	
+	struct ast *new_comb = build_optimizing_tree(p);
+}
+
 int convert_par_composition(struct ast *a, struct ast *parent) 
 {
 	if (a == NULL)
@@ -889,13 +967,10 @@ int convert_par_composition(struct ast *a, struct ast *parent)
 			a->r = add1->r;
 		}
 		return 1;
-	} else {
-		int retval = 0;
-		if ((retval = convert_par_composition(a->l, a)) != 0)
-			return retval;
-		if ((retval = convert_par_composition(a->l, a)) != 0)
-			return retval;
-	}
+	} 
+	int retval = 0;
+	if ((retval = convert_par_composition(a->l, a)) != 0)
+		return retval;
 	return 0;
 }
 
@@ -1140,6 +1215,7 @@ void calc_apriori_semantics(struct ast *r)
 	for (i = 1; i <= 16; i ++) {
 		initial_equations[i] = get_sem_tree_copy(equations[i]);
 		reduce_substitutions(initial_equations[i]);
+		combining_par_composition(equations[i]);
 		if (i > 1) 
 			expand_needed_equations(equations[i]);
 		fprintf(yyout, " \nP(%d) = ", i);
