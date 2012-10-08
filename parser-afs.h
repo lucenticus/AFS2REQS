@@ -87,7 +87,7 @@ struct proc_list *sem_processes;
 struct subst_list *subst;
 int last_eq_index = 1;
 
-struct proc_list *initial_equations[MAX_EQ];
+struct ast *initial_equations[MAX_EQ];
 struct ast *equations[MAX_EQ];
 
 struct symbol symtab[NHASH];

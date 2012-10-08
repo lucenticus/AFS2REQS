@@ -761,7 +761,9 @@ int compare_proc_list(struct ast *a)
 	int i = 1;
 	for (i = 1; i < last_eq_index; i++) {		
 		struct proc_list *tmp = p;
-		struct proc_list *tmp2 = initial_equations[i];
+		
+		struct proc_list *tmp2 = NULL;
+		get_proc_list(initial_equations[i], &tmp2);
 		int is_eq = 1;
 		while(tmp && is_eq) {
 			while (tmp2) {
@@ -775,15 +777,24 @@ int compare_proc_list(struct ast *a)
 			else
 				is_eq = 0;			
 		}
-		if (is_eq) 
+		if (is_eq) {
+			printf("%d", i);
 			return i;
+		}
 	}
 	return -1;
 }
 int designate_equation(struct ast **a) 
 {
-	int indx = compare_proc_list(*a);
-	if (indx == -1) {
+	
+	char buf[10] = {0};
+	sprintf(buf, "%d" , ++last_eq_index);
+	struct ast *id = new_id(buf);
+	struct ast *n = new_ast(SEM_EQ, id, *a);
+	equations[last_eq_index] = get_sem_tree_copy(*a);
+	*a = n;
+	//initial_equations[indx] = get_sem_tree_copy(*a);
+	/*if (indx == -1) {
 		char buf[10] = {0};
 		sprintf(buf, "%d" , ++last_eq_index);
 		struct ast *id = new_id(buf);
@@ -801,7 +812,7 @@ int designate_equation(struct ast **a)
 		struct ast *n = new_ast(SEM_EQ, id, *a);
 		*a = n;
 		initial_equations[last_eq_index] = initial_equations[indx];
-	}
+	}*/
 
 	return 1;
 }
@@ -1125,9 +1136,8 @@ void calc_apriori_semantics(struct ast *r)
 	equations[1] = get_sem_tree_copy(sem_root);
 
 	for (i = 1; i <= 16; i ++) {
-		struct proc_list *p = NULL;
-		get_proc_list(equations[i], &p);
-		initial_equations[i] = p;
+		initial_equations[i] = get_sem_tree_copy(equations[i]);
+		reduce_substitutions(initial_equations[i]);
 		if (i > 1) 
 			expand_needed_equations(equations[i]);
 		fprintf(yyout, " \nP(%d) = ", i);
@@ -1196,7 +1206,13 @@ void calc_apriori_semantics(struct ast *r)
 		fprintf(yyout, " \n\nlast index = %d \n", last_eq_index);
 		fprintf(yyout, " \n//////////////////////////////////////////////////////////// \n\n", i);
 	}
-	
+	fprintf(yyout, " = \n\n +++ Initial equations  +++\n\n");
+	for (i = 1; i <=16; i++) {
+		fprintf(yyout, "\n++++++++++++++\nP(%d) = ", i);
+		print_sem_equation(initial_equations[i]);
+		fprintf(yyout, " = ");
+		print_sem_equation(equations[i]);
+	}
 }
 
 void remove_proc_node(struct ast *a, struct ast *parent) 
@@ -1323,7 +1339,8 @@ void print_sem_equation(struct ast *a)
 		} else 
 			print_sem_equation(a->l);
 		
-		fprintf(yyout, " || \n || ");
+		//fprintf(yyout, " || \n || ");
+		fprintf(yyout, " || ");
 		if (a->r && a->r->nodetype == '+') {
 			fprintf(yyout, "( ");
 			print_sem_equation(a->r);
