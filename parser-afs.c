@@ -503,33 +503,35 @@ int apply_basis_axioms(struct ast *a, struct ast *parent)
 			a->l = a->l->l;
 
 			return 1;
-		} else if (a->l && a->l->nodetype == '^' &&
-			   a->r && a->r->nodetype == '^' || 
-			   a->l && a->l->nodetype == '*' &&
-			   a->r && a->r->nodetype == '*') {
+		} else if (a->l && a->l->nodetype == '^' &&  a->r && a->r->nodetype == '^' || 
+			   a->l && a->l->nodetype == '*' &&  a->r && a->r->nodetype == '*') {
 			// b ^ X + b ^ Y = b ^ (X + Y)
 			// a * X + a * Y = a * (X + Y)
 
 			if (is_equal_subtree(a->l->l, a->r->l)) {
-				fprintf(yyout, "b ^ X + b ^ Y = b ^ (X + Y) or ");
-				fprintf(yyout, "a * X + a * Y = a * (X + Y)");
+				if (a->l->nodetype == '^')
+					fprintf(yyout, "b ^ X + b ^ Y = b ^ (X + Y)");
+				else if (a->l->nodetype == '*')
+					fprintf(yyout, "a * X + a * Y = a * (X + Y)");
 				a->nodetype = a->l->nodetype;
 				a->r = new_ast('+', a->l->r, a->r->r);
 				a->l = a->l->l;
 				return 1;
 			}
-		} else if (a->l && a->l->nodetype == '^' &&
+		} else if (a->l && a->l->nodetype == '^' && 
 			   a->r && a->r->nodetype == '+' &&
 			   a->r->l && a->r->l->nodetype == '^' || 
-			   a->l && a->l->nodetype == '*' &&
-			   a->r && a->r->nodetype == '+' ||
+			   a->l && a->l->nodetype == '*' && a->r && 
+			   a->r->nodetype == '+' &&
 			   a->r->l && a->r->l->nodetype == '*' ) {
 			// b ^ X + b ^ Y = b ^ (X + Y)
 			// a * X + a * Y = a * (X + Y)
 
 			if (is_equal_subtree(a->l->l, a->r->l->l)) {
-				fprintf(yyout, "b ^ X + b ^ Y = b ^ (X + Y) or ");
-				fprintf(yyout, "a * X + a * Y = a * (X + Y)");
+				if (a->l->nodetype == '^')
+					fprintf(yyout, "b ^ X + b ^ Y = b ^ (X + Y)");
+				else if (a->l->nodetype == '*')
+					fprintf(yyout, "a * X + a * Y = a * (X + Y)");
 				a->l->r = new_ast(a->nodetype, a->l->r, a->r->l->r);
 				a->r = a->r->r;
 				return 1;
@@ -1098,7 +1100,7 @@ int is_equal_subtree(struct ast *a, struct ast *b) {
 	if (a->nodetype == b->nodetype &&
 	    a->nodetype == NODE_ID &&
 	    strcmp(((struct term_id *)a)->name,((struct term_id *)b)->name) != 0) {
-		return;
+		return 0;
 	}
 	
 	if (is_equal_subtree(a->l, b->l) == 0)
