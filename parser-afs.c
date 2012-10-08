@@ -854,6 +854,19 @@ struct ast * find_first_communication_node(struct ast *a)
 		return tmp;
 	
 }
+int is_can_communication(struct ast *a, struct ast *b)
+{
+	if ((a->nodetype == SEM_CIN && b->nodetype == SEM_OUT ||
+	     b->nodetype == SEM_CIN && a->nodetype == SEM_OUT ||
+	     b->nodetype == SEM_COUT && a->nodetype == SEM_IN ||
+	     a->nodetype == SEM_COUT && b->nodetype == SEM_IN) &&
+	    is_equal_subtree(a->l, b->l) &&
+	    is_equal_subtree(a->r, b->r))  {
+		return 1;
+	}
+
+	return 0;
+}
 struct ast *build_optimizing_tree(struct proc_list *p) 
 {
 	struct proc_list *tmp1 = p;
@@ -872,12 +885,7 @@ struct ast *build_optimizing_tree(struct proc_list *p)
 				continue;
 			}
 			
-			if ((tmp1->first_comm->nodetype == SEM_CIN && tmp2->first_comm->nodetype == SEM_OUT ||
-			     tmp2->first_comm->nodetype == SEM_CIN && tmp1->first_comm->nodetype == SEM_OUT ||
-			     tmp2->first_comm->nodetype == SEM_COUT && tmp1->first_comm->nodetype == SEM_IN ||
-			     tmp1->first_comm->nodetype == SEM_COUT && tmp2->first_comm->nodetype == SEM_IN) &&
-			    is_equal_subtree(tmp1->first_comm->l, tmp2->first_comm->l) &&
-			    is_equal_subtree(tmp1->first_comm->r, tmp2->first_comm->r)) {
+			if (is_can_communication(tmp1->first_comm, tmp2->first_comm)) {
 				first = tmp1;
 				second = tmp2;
 			}
@@ -891,10 +899,35 @@ struct ast *build_optimizing_tree(struct proc_list *p)
 		fprintf(yyout, ",  ");
 		print_sem_equation(second->first_comm);
 		fprintf(yyout, " }}\n");
-	}
-	return NULL;
+		
+		struct ast *new_tree = NULL;
+		struct ast *tmp_node = NULL;
+		struct proc_list *tmp = p;
+		tmp_node = malloc(sizeof(struct ast));
+		tmp_node->nodetype = SEM_PAR;
+		tmp_node->l = first->proc;
+		tmp_node->r = second->proc;
+		new_tree = tmp_node;
+		while (tmp) {
+			if (tmp != first && tmp != second ) {
+				struct ast *proc = malloc(sizeof(struct ast));
+				proc->nodetype = SEM_PAR;
+				//reduce_substitutions(tmp->proc);
+				proc->r = tmp->proc;
+				proc->l = tmp_node->r;
+				tmp_node->r = proc;
+				tmp_node = proc;
+			}
+			tmp = tmp->next;	
+		}
+		fprintf(yyout, "\n{{ ");
+		print_sem_equation(new_tree);
+		fprintf(yyout, " }}\n");
+		return new_tree;
+	} else
+		return NULL;
 }
-int combining_par_composition(struct ast *a) 
+struct ast * combining_par_composition(struct ast *a) 
 {
 	struct proc_list *p = NULL;
 	get_proc_list(a, &p);
@@ -911,8 +944,8 @@ int combining_par_composition(struct ast *a)
 		fprintf(yyout, " ||| \n");
 		tmp = tmp->next;
 	}
-	
-	struct ast *new_comb = build_optimizing_tree(p);
+
+	return build_optimizing_tree(p);
 }
 
 int convert_par_composition(struct ast *a, struct ast *parent) 
@@ -1215,11 +1248,14 @@ void calc_apriori_semantics(struct ast *r)
 	for (i = 1; i <= 16; i ++) {
 		initial_equations[i] = get_sem_tree_copy(equations[i]);
 		reduce_substitutions(initial_equations[i]);
-		combining_par_composition(equations[i]);
-		if (i > 1) 
-			expand_needed_equations(equations[i]);
 		fprintf(yyout, " \nP(%d) = ", i);
 		print_sem_equation(equations[i]);
+
+		struct ast * t = combining_par_composition(equations[i]);
+		if (t)
+			equations[i] = t;
+		/*if (i > 1) 
+		  expand_needed_equations(equations[i]);*/
 		int retval = 0;
 		while(convert_par_composition(equations[i], NULL)) {			
 			
