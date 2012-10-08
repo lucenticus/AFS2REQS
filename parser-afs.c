@@ -352,6 +352,9 @@ void proc_sem_to_par_comp()
 {
 	struct proc_list *tmp = sem_processes;
 	sem_root = NULL;
+	struct proc_list *tmp2 = tmp->next;
+	struct proc_list *tmp3 = tmp->next->next;
+	
 	while (tmp) {
 		if (!sem_root && tmp->next) {
 			struct ast *proc = malloc(sizeof(struct ast));
@@ -762,19 +765,21 @@ int compare_proc_list(struct ast *a)
 	
 	int i = 1;
 	for (i = 1; i < last_eq_index; i++) {		
-		struct proc_list *tmp = p;
-		
+		if (a == initial_equations[i])
+			break;
+		struct proc_list *tmp = p;		
 		struct proc_list *tmp2 = NULL;
 		get_proc_list(initial_equations[i], &tmp2);
 		int is_eq = 1;
 		while(tmp && is_eq) {
-			while (tmp2) {
-				if (is_equal_subtree(tmp->proc, tmp2->proc))
-					tmp2 = tmp2->next;
-				else
+			struct proc_list *t = tmp2;
+			while (t) {
+				if (is_equal_subtree(tmp->proc, t->proc)) {
 					break;
+				} else					
+					t = t->next;
 			}
-			if (is_equal_subtree(tmp->proc, tmp2->proc))
+			if (t)
 				tmp = tmp->next;
 			else
 				is_eq = 0;			
@@ -796,17 +801,17 @@ int designate_equation(struct ast **a)
 	equations[last_eq_index] = get_sem_tree_copy(*a);
 	*a = n;
 	//initial_equations[indx] = get_sem_tree_copy(*a);
-	/*if (indx == -1) {
+	/*int indx = compare_proc_list(*a);
+	if (indx == -1) {
 		char buf[10] = {0};
 		sprintf(buf, "%d" , ++last_eq_index);
 		struct ast *id = new_id(buf);
 		struct ast *n = new_ast(SEM_EQ, id, *a);
-		indx = last_eq_index;
-		equations[indx] = get_sem_tree_copy(*a);
+		equations[last_eq_index] = get_sem_tree_copy(*a);
 		*a = n;
 		struct proc_list *p = NULL;
 		get_proc_list(*a, &p);
-		initial_equations[indx] = p;
+		initial_equations[last_eq_index] = p->proc;
 	} else {
 		char buf[10] = {0};
 		sprintf(buf, "%d" , indx);
@@ -814,7 +819,7 @@ int designate_equation(struct ast **a)
 		struct ast *n = new_ast(SEM_EQ, id, *a);
 		*a = n;
 		initial_equations[last_eq_index] = initial_equations[indx];
-	}*/
+		}*/
 
 	return 1;
 }
@@ -911,8 +916,7 @@ struct ast *build_optimizing_tree(struct proc_list *p)
 		while (tmp) {
 			if (tmp != first && tmp != second ) {
 				struct ast *proc = malloc(sizeof(struct ast));
-				proc->nodetype = SEM_PAR;
-				//reduce_substitutions(tmp->proc);
+				proc->nodetype = SEM_PAR;				
 				proc->r = tmp->proc;
 				proc->l = tmp_node->r;
 				tmp_node->r = proc;
@@ -1246,19 +1250,27 @@ void calc_apriori_semantics(struct ast *r)
 	equations[1] = get_sem_tree_copy(sem_root);
 
 	for (i = 1; i <= 16; i ++) {
+		// TEST CODE
+		if (i == 8) {
+			//print_tree(equations[i]);
+			struct ast *tmp = equations[i]->l->l;
+			equations[i]->l->l = equations[i]->l->r;
+			equations[i]->l->r = tmp;
+		}
+		// END TEST CODE
 		initial_equations[i] = get_sem_tree_copy(equations[i]);
 		reduce_substitutions(initial_equations[i]);
 		fprintf(yyout, " \nP(%d) = ", i);
 		print_sem_equation(equations[i]);
 
-		struct ast * t = combining_par_composition(equations[i]);
+		/*struct ast * t = combining_par_composition(equations[i]);
 		if (t)
-			equations[i] = t;
-		/*if (i > 1) 
-		  expand_needed_equations(equations[i]);*/
+			equations[i] = t;*/
+		if (i > 1) 
+		  expand_needed_equations(equations[i]);
 		int retval = 0;
 		while(convert_par_composition(equations[i], NULL)) {			
-			
+
 			fprintf(yyout, " = \n\n+++ Convert parallel composition +++\n\n = ");
 			print_sem_equation(equations[i]);
 
@@ -1311,6 +1323,7 @@ void calc_apriori_semantics(struct ast *r)
 			print_sem_equation(equations[i]);
 		} while (retval);
 		apply_axioms_for_ll_operation(equations[i], NULL);
+
 		fprintf(yyout, " = \n\n+++ Apply axioms for operation LL +++\n\n = ");
 		print_sem_equation(equations[i]);
 		
