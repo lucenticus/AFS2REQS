@@ -764,8 +764,8 @@ int compare_proc_list(struct ast *a)
 	get_proc_list(a, &p);
 	
 	int i = 1;
-	for (i = 1; i < last_eq_index; i++) {		
-		if (a == initial_equations[i])
+	for (i = 1; i < curr_eq_index; i++) {		
+		if (is_equal_subtree(a, equations[i]))
 			break;
 		struct proc_list *tmp = p;		
 		struct proc_list *tmp2 = NULL;
@@ -794,14 +794,14 @@ int compare_proc_list(struct ast *a)
 int designate_equation(struct ast **a) 
 {
 	
-	char buf[10] = {0};
+	/*char buf[10] = {0};
 	sprintf(buf, "%d" , ++last_eq_index);
 	struct ast *id = new_id(buf);
 	struct ast *n = new_ast(SEM_EQ, id, *a);
 	equations[last_eq_index] = get_sem_tree_copy(*a);
 	*a = n;
-	//initial_equations[indx] = get_sem_tree_copy(*a);
-	/*int indx = compare_proc_list(*a);
+	initial_equations[indx] = get_sem_tree_copy(*a);*/
+	int indx = compare_proc_list(*a);
 	if (indx == -1) {
 		char buf[10] = {0};
 		sprintf(buf, "%d" , ++last_eq_index);
@@ -819,7 +819,7 @@ int designate_equation(struct ast **a)
 		struct ast *n = new_ast(SEM_EQ, id, *a);
 		*a = n;
 		initial_equations[last_eq_index] = initial_equations[indx];
-		}*/
+	}
 
 	return 1;
 }
@@ -1250,6 +1250,7 @@ void calc_apriori_semantics(struct ast *r)
 	equations[1] = get_sem_tree_copy(sem_root);
 
 	for (i = 1; i <= 16; i ++) {
+		curr_eq_index = i;
 		// TEST CODE
 		if (i == 8) {
 			//print_tree(equations[i]);
@@ -1334,7 +1335,7 @@ void calc_apriori_semantics(struct ast *r)
 		fprintf(yyout, " \n//////////////////////////////////////////////////////////// \n\n", i);
 	}
 	fprintf(yyout, " = \n\n +++ Initial equations  +++\n\n");
-	for (i = 1; i <=16; i++) {
+	for (i = 1; i <= 16; i++) {
 		fprintf(yyout, "\n++++++++++++++\nP(%d) = ", i);
 		print_sem_equation(initial_equations[i]);
 		fprintf(yyout, " = ");

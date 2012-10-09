@@ -87,7 +87,7 @@ struct proc_list *processes;
 struct proc_list *sem_processes;
 struct subst_list *subst;
 int last_eq_index = 1;
-
+int curr_eq_index = 1;
 struct ast *initial_equations[MAX_EQ];
 struct ast *equations[MAX_EQ];
 
