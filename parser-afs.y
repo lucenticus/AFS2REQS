@@ -1,5 +1,5 @@
 %token BEG END NET CHAN ALL ANY FUN SKIP EXIT BREAK WAIT READ WRITE
-%token SEQ PAR ALT LOOP IDENTIFIER TRUE FALSE BOOL  NEXT COM
+%token SEQ PAR ALT LOOP IDENTIFIER TRUE FALSE BOOL  NEXT COM 
 
 %start pr
 
@@ -15,7 +15,7 @@
 	int tok;
 }
 
-%type <a> pr chan type fproc c gc g
+%type <a> pr chan type fproc c gc g com
 %type <id> IDENTIFIER
 %type <tok> ALL ANY COM SKIP EXIT BREAK WAIT READ WRITE SEQ PAR ALT LOOP TRUE FALSE BOOL
 
@@ -37,20 +37,19 @@ type    : ALL
 	{ $$ = new_ast(ANY, NULL, NULL); }
 	
 
-fproc   : FUN IDENTIFIER ':' ':' c
+fproc   : FUN IDENTIFIER ':' ':' com
 	{ $$ = new_ast(NODE_FUNC, new_id($2), $5); }
 
-	| FUN IDENTIFIER ':' ':' c fproc
+	| FUN IDENTIFIER ':' ':' com fproc
 	{ $$ = new_ast(NODE_FUNC_LIST, new_ast(NODE_FUNC, new_id($2), $5), $6); }
+
+com     :  c 
+	{ $$ =  $1; } 
+	| com ';' c
+	{ $$ = new_ast(NODE_COM_LIST, $1, $3); } 
 
 c       : COM '(' IDENTIFIER ')'
 	{ $$ = new_ast(COM, new_id($3), NULL); }
-
-/*	| c ';'
-	{ $$ = new_ast(NODE_COM_LIST, $1, NULL); }
-
-	| c ';' c
-	{ $$ = new_ast(NODE_COM_LIST, $1, $3); } */
 
 	| SKIP
 	{ $$ = new_ast(SKIP, NULL, NULL); }
@@ -70,17 +69,12 @@ c       : COM '(' IDENTIFIER ')'
 	| WRITE '(' IDENTIFIER ',' IDENTIFIER ')'
 	{ $$ = new_ast(WRITE, new_id($3), new_id($5)); }
 
-	| SEQ '(' c ')'
+	| SEQ '(' com ')'
 	{ $$ = new_ast(SEQ, $3, NULL); }
 
-	| SEQ '(' c ';' c ')'
-	{ $$ = new_ast(SEQ, $3, $5); }
-
-	| PAR '(' c ')'
+	| PAR '(' com ')'
 	{ $$ = new_ast(PAR, $3, NULL); }
 
-	| PAR '(' c ';' c ')'
-	{ $$ = new_ast(PAR, $3, $5); }
 
 	| ALT '(' gc ';' gc ')'
 	{ $$ = new_ast(ALT, $3, $5); }
@@ -88,7 +82,7 @@ c       : COM '(' IDENTIFIER ')'
 	| LOOP '(' ALT '(' gc ')' ')'
 	{ $$ = new_ast(LOOP, new_ast(ALT, $5, NULL), NULL); }
 
-gc      : g NEXT c
+gc      : g NEXT com
 	{ $$ = new_ast(NODE_GC, $1, $3); }
 
 	| gc ';' gc

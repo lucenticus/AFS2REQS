@@ -252,6 +252,12 @@ struct ast* afs_to_sem(struct ast *a)
 		com->l = a->l;
 		com->r = NULL;
 		return com;
+	} else if (a->nodetype == NODE_COM_LIST) {
+		struct ast *com = malloc(sizeof(struct ast));
+		com->nodetype = SEM_COM_LIST;
+		com->l = afs_to_sem(a->l);
+		com->r = afs_to_sem(a->r);
+		return com;
 	} else if (a->nodetype == TRUE) {
 		fprintf(yyout, "T");
 		struct ast *t = malloc(sizeof(struct ast));
@@ -375,6 +381,8 @@ void proc_sem_to_par_comp()
 {
 	struct proc_list *tmp = sem_processes;
 	sem_root = NULL;
+	if (!tmp)
+		return;
 	struct proc_list *tmp2 = tmp->next;
 	struct proc_list *tmp3 = tmp->next->next;
 	
@@ -1494,6 +1502,10 @@ void print_sem_equation(struct ast *a)
 		fprintf(yyout, "T");
 		print_sem_equation(a->l);
 		print_sem_equation(a->r);
+	} else if (a->nodetype == SEM_COM_LIST) {
+		print_sem_equation(a->l);
+		fprintf(yyout, "*");
+		print_sem_equation(a->r);
 	} else if (a->nodetype == SEM_COM) {
 		fprintf(yyout, "A");
 		print_sem_equation(a->l);
@@ -1581,7 +1593,8 @@ void print_sem_equation(struct ast *a)
 		print_sem_equation(a->l);
 		fprintf(yyout, " %c ", a->nodetype);
 		print_sem_equation(a->r);
+	} else {
+		fprintf(yyout, " Unknown nodetype: %d", a->nodetype);
+		
 	}
-
-
 }

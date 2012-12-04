@@ -10,7 +10,7 @@ IS			(u|U|l|L)*
 %{
 #include <stdio.h>
 #include "parser-afs.tab.h"
-#include "parser-afs.h"
+#include "parser.h"
 
 %}
 %%
@@ -71,4 +71,4 @@ L?'(\\.|[^\\'])+'	{ count(); yylval.id = strdup(yytext); return (IDENTIFIER); }
 
 %%
 
-#include "parser-afs.c"
+#include "parser.c"

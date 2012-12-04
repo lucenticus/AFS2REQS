@@ -1,0 +1,7 @@
+NET
+	CHAN fill :: ALL(1) : ALL(1)
+	CHAN empty :: ALL(1) : ALL(1)
+BEGIN
+	FUN test_write :: LOOP(ALT(tt -> SEQ(write(empty, 1); write(fill, 1); read(fill, 1); read(empty, 1))))
+	FUN test_read :: LOOP(ALT(tt -> SEQ(write(fill, 1); write(empty, 1); read(empty, 1); read(fill, 1))))
+END
