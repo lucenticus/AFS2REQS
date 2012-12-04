@@ -254,8 +254,13 @@ struct ast* afs_to_sem(struct ast *a)
 		return com;
 	} else if (a->nodetype == NODE_COM_LIST) {
 		struct ast *com = malloc(sizeof(struct ast));
-		com->nodetype = SEM_COM_LIST;
+		com->nodetype = '*';
+		printf("\nLEFT:");
+		print_tree(a->l);
+		printf("\nRIGHT:");
+		print_tree(a->r);
 		com->l = afs_to_sem(a->l);
+		fprintf(yyout, " * ");
 		com->r = afs_to_sem(a->r);
 		return com;
 	} else if (a->nodetype == TRUE) {
@@ -327,13 +332,8 @@ struct ast* afs_to_sem(struct ast *a)
 		out->l = a->l;
 		out->r = a->r;
 		return out;
-	} else if (a->nodetype == SEQ) {
-		struct ast *comp_op = malloc(sizeof(struct ast));
-		comp_op->nodetype = '*';
-		comp_op->l = afs_to_sem(a->l);
-		fprintf(yyout, " * ");
-		comp_op->r = afs_to_sem(a->r);       
-		return comp_op;
+	} else if (a->nodetype == SEQ) {		       
+		return afs_to_sem(a->l); 
 	} else if (a->nodetype == PAR) {
 		struct ast *par_op = malloc(sizeof(struct ast));
 		par_op->nodetype = 'U';
@@ -792,6 +792,20 @@ void get_proc_list(struct ast *a, struct proc_list **p)
 		get_proc_list(a->r, p);
 	}
 }
+
+/* void get_full_proc_list(struct ast *a, struct proc_list **p)   */
+/* { */
+/* 	if (a == NULL) */
+/* 		return; */
+/* 	if (a->nodetype == SEM_PAR) { */
+/* 		add_to_proc_list(p, a->l); */
+/* 		add_to_proc_list(p, a->r); */
+/* 	}  */
+
+/* 	get_proc_list(a->l, p); */
+/* 	get_proc_list(a->r, p); */
+	
+/* } */
 
 int compare_proc_list(struct ast *a) 
 {

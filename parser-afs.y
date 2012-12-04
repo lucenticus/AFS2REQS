@@ -45,7 +45,7 @@ fproc   : FUN IDENTIFIER ':' ':' com
 
 com     :  c 
 	{ $$ =  $1; } 
-	| com ';' c
+	| c ';' com
 	{ $$ = new_ast(NODE_COM_LIST, $1, $3); } 
 
 c       : COM '(' IDENTIFIER ')'
@@ -76,13 +76,13 @@ c       : COM '(' IDENTIFIER ')'
 	{ $$ = new_ast(PAR, $3, NULL); }
 
 
-	| ALT '(' gc ';' gc ')'
-	{ $$ = new_ast(ALT, $3, $5); }
+	| ALT '(' gc ')'
+	{ $$ = new_ast(ALT, $3, NULL); }
 
 	| LOOP '(' ALT '(' gc ')' ')'
 	{ $$ = new_ast(LOOP, new_ast(ALT, $5, NULL), NULL); }
 
-gc      : g NEXT com
+gc      : g NEXT c
 	{ $$ = new_ast(NODE_GC, $1, $3); }
 
 	| gc ';' gc
