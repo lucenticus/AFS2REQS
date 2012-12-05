@@ -390,15 +390,15 @@ void proc_sem_to_par_comp()
 		if (!sem_root && tmp->next) {
 			struct ast *proc = malloc(sizeof(struct ast));
 			proc->nodetype = SEM_PAR;
-			proc->r = tmp->proc;
-			proc->l = tmp->next->proc;
+			proc->l = tmp->proc;
+			proc->r = tmp->next->proc;
 			sem_root = proc;
 			tmp = tmp->next->next;
 		} else if (sem_root) {
 			struct ast *proc = malloc(sizeof(struct ast));
 			proc->nodetype = SEM_PAR;
-			proc->r = sem_root;
-			proc->l = tmp->proc;
+			proc->l = sem_root;
+			proc->r = tmp->proc;
 			sem_root = proc;
 			tmp = tmp->next;
 		}
@@ -702,18 +702,28 @@ int apply_axioms_for_ll_operation(struct ast *a, struct ast *parent)
 {
 	if (a == NULL)
 		return 0;
-	if (a->nodetype == SEM_PARLL) {
+	if (a->nodetype == SEM_PARLL && 
+	    a->l && a->l->nodetype == SEM_NULL) {
+		a->nodetype = SEM_NULL;
+		a->l = NULL;
+		a->r = NULL;
+		return 1;
+	}	       
+	if (a->nodetype == SEM_PARLL) {	       
 		if (a->l && a->l->nodetype == '^' ||
 		    a->l && a->l->nodetype == '*' ) {
 			struct ast *n = new_ast(SEM_PAR, a->l->r, a->r);
 			a->nodetype = a->l->nodetype;
 			a->l = a->l->l;
 			a->r = n;
+			return 1;
 		}
 	}
-	apply_axioms_for_ll_operation(a->l, a);
-	apply_axioms_for_ll_operation(a->r, a);
-	return 0;
+	int retval = apply_axioms_for_ll_operation(a->l, a);
+	if (retval)
+		return retval;
+	retval = apply_axioms_for_ll_operation(a->r, a);
+	return retval;
 }
 
 int apply_encapsulation_operation(struct ast *a, struct ast *parent) 
@@ -793,24 +803,33 @@ void get_proc_list(struct ast *a, struct proc_list **p)
 	}
 }
 
-/* void get_full_proc_list(struct ast *a, struct proc_list **p)   */
-/* { */
-/* 	if (a == NULL) */
-/* 		return; */
-/* 	if (a->nodetype == SEM_PAR) { */
-/* 		add_to_proc_list(p, a->l); */
-/* 		add_to_proc_list(p, a->r); */
-/* 	}  */
+void get_full_proc_list(struct ast *a, struct proc_list **p)
+{
+	if (a == NULL)
+		return;
+	if (a->nodetype == SEM_PAR) {
+		add_to_proc_list(p, a->l);
+		add_to_proc_list(p, a->r);
+	}
 
-/* 	get_proc_list(a->l, p); */
-/* 	get_proc_list(a->r, p); */
+	get_proc_list(a->l, p);
+	get_proc_list(a->r, p);
 	
-/* } */
+}
 
 int compare_proc_list(struct ast *a) 
 {
 	struct proc_list *p = NULL;
-	get_proc_list(a, &p);
+	get_full_proc_list(a, &p);
+	/* struct proc_list *t = p; */
+	/* fprintf(yyout, "\n ////////////////////////////////////////////////"); */
+	/* while (t) { */
+	/* 	fprintf(yyout, "\n //////// "); */
+	/* 	print_sem_equation(t->proc); */
+	/* 	t = t->next; */
+	/* 	fprintf(yyout, "\n //////// ");		 */
+	/* } */
+	/* fprintf(yyout, "\n ///////////////////////////////////////////////"); */
 	
 	int i = 1;
 	for (i = 1; i < curr_eq_index; i++) {		
@@ -818,7 +837,7 @@ int compare_proc_list(struct ast *a)
 			break;
 		struct proc_list *tmp = p;		
 		struct proc_list *tmp2 = NULL;
-		get_proc_list(initial_equations[i], &tmp2);
+		get_full_proc_list(initial_equations[i], &tmp2);
 		int is_eq = 1;
 		while(tmp && is_eq) {
 			struct proc_list *t = tmp2;
@@ -986,7 +1005,7 @@ struct ast * combining_par_composition(struct ast *a)
 {
 	struct proc_list *p = NULL;
 	get_proc_list(a, &p);
-	/*struct proc_list *t = p;
+	struct proc_list *t = p;
 	fprintf(yyout, "\n ////////////////////////////////////////////////");
 	while (t) {
 		fprintf(yyout, "\n //////// ");
@@ -995,7 +1014,7 @@ struct ast * combining_par_composition(struct ast *a)
 		fprintf(yyout, "\n //////// ");		
 	}
 	fprintf(yyout, "\n ///////////////////////////////////////////////");
-	*/
+	
 	struct proc_list *tmp = p;
 	while (tmp) {
 		struct ast *comm_node = find_first_communication_node(tmp->proc);
@@ -1065,7 +1084,12 @@ int convert_par_composition(struct ast *a, struct ast *parent)
 			a->r = add1->r;
 		}
 		return 1;
-	} 
+	} else if (a->nodetype == '+') {
+		int retval = 0;
+		retval = convert_par_composition(a->l, a);
+		retval = convert_par_composition(a->r, a);
+		return retval;	
+	}
 	int retval = 0;
 	if ((retval = convert_par_composition(a->l, a)) != 0)
 		return retval;
@@ -1318,7 +1342,7 @@ void calc_apriori_semantics(struct ast *r)
 		reduce_substitutions(initial_equations[i]);
 		fprintf(yyout, " \nP(%d) = ", i);
 		print_sem_equation(equations[i]);
-
+		
 		struct ast * t = combining_par_composition(equations[i]);
 		if (t)
 			equations[i] = t;
@@ -1354,10 +1378,11 @@ void calc_apriori_semantics(struct ast *r)
 				fprintf(yyout, " +++\n\n = ");
 				print_sem_equation(equations[i]);
 			} while (retval);
-			
-			apply_axioms_for_ll_operation(equations[i], NULL);
-			fprintf(yyout, " = \n\n+++ Apply axioms for operation LL +++\n\n = ");
-			print_sem_equation(equations[i]);
+			do {
+				retval = apply_axioms_for_ll_operation(equations[i], NULL);
+				fprintf(yyout, " = \n\n+++ Apply axioms for operation LL +++\n\n = ");
+				print_sem_equation(equations[i]);			
+			} while (retval);
 			
 			apply_encapsulation_operation(equations[i], NULL);
 			fprintf(yyout, " = \n\n+++ Apply encapsulation operation +++\n\n = ");
@@ -1381,10 +1406,12 @@ void calc_apriori_semantics(struct ast *r)
 			fprintf(yyout, " +++\n\n = ");
 			print_sem_equation(equations[i]);
 		} while (retval);
-		apply_axioms_for_ll_operation(equations[i], NULL);
-
-		fprintf(yyout, " = \n\n+++ Apply axioms for operation LL +++\n\n = ");
-		print_sem_equation(equations[i]);
+		
+		do {
+			retval = apply_axioms_for_ll_operation(equations[i], NULL);
+			fprintf(yyout, " = \n\n+++ Apply axioms for operation LL +++\n\n = ");
+			print_sem_equation(equations[i]);			
+		} while (retval);
 		
 		apply_equational_characterization(equations[i], NULL);
 		fprintf(yyout, " = \n\n+++ Apply equational_characterization +++\n\nP(%d) = ", i);
