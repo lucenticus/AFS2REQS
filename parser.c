@@ -35,7 +35,7 @@ void count()
 			column += 8 - (column % 8);
 		else
 			column++;
-	/*ECHO;*/
+	ECHO;
 }
 static unsigned symhash(char *sym) 
 {
@@ -808,53 +808,101 @@ void get_full_proc_list(struct ast *a, struct proc_list **p)
 	if (a == NULL)
 		return;
 	if (a->nodetype == SEM_PAR) {
-		add_to_proc_list(p, a->l);
-		add_to_proc_list(p, a->r);
+		if (a->l && a->l->nodetype == SEM_PAR) {
+			get_proc_list(a->l, p);
+		} else {
+			add_to_proc_list(p, a->l);
+		}
+		if (a->r && a->r->nodetype == SEM_PAR) {
+			get_proc_list(a->r, p);
+		} else {
+			add_to_proc_list(p, a->r);
+		}
 	}
 
-	get_proc_list(a->l, p);
-	get_proc_list(a->r, p);
+
+
 	
 }
-
+int get_list_size(struct proc_list *p)
+{
+	struct proc_list *tmp = p;
+	int i = 0;
+	while (tmp) {
+		i++;
+		tmp = tmp->next;
+	}
+	return i;
+}
+void print_list(struct proc_list *p) 
+{
+	struct proc_list *t = p;
+	fprintf(yyout, "\n ////////////////////////////////////////////////");
+	while (t) {
+		fprintf(yyout, "\n //////// ");
+		print_sem_equation(t->proc);
+		t = t->next;
+		fprintf(yyout, "\n //////// ");
+	}
+	fprintf(yyout, "\n ///////////////////////////////////////////////");
+	
+}
 int compare_proc_list(struct ast *a) 
 {
 	struct proc_list *p = NULL;
 	get_full_proc_list(a, &p);
-	/* struct proc_list *t = p; */
-	/* fprintf(yyout, "\n ////////////////////////////////////////////////"); */
-	/* while (t) { */
-	/* 	fprintf(yyout, "\n //////// "); */
-	/* 	print_sem_equation(t->proc); */
-	/* 	t = t->next; */
-	/* 	fprintf(yyout, "\n //////// ");		 */
-	/* } */
-	/* fprintf(yyout, "\n ///////////////////////////////////////////////"); */
 	
 	int i = 1;
-	for (i = 1; i < curr_eq_index; i++) {		
-		if (is_equal_subtree(a, equations[i]))
-			break;
+	for (i = 1; i < last_eq_index; i++) {
+		if (i == curr_eq_index)
+			continue;
+		if (is_equal_subtree(a, equations[i])) 
+			return i;
 		struct proc_list *tmp = p;		
 		struct proc_list *tmp2 = NULL;
+
 		get_full_proc_list(initial_equations[i], &tmp2);
+		print_list(tmp);
+		print_list(tmp2);
 		int is_eq = 1;
+		if (get_list_size(p) != get_list_size(tmp2)) {
+			fprintf(yyout, " ((0)) ");
+			is_eq = 0;
+		}
+		
 		while(tmp && is_eq) {
 			struct proc_list *t = tmp2;
 			while (t) {
 				if (is_equal_subtree(tmp->proc, t->proc)) {
+					fprintf(yyout, " ((1)) ");
 					break;
-				} else					
+				} else	{		
+					fprintf(yyout, " ((2)) ");
 					t = t->next;
+				}
 			}
-			if (t)
+			if (t) {
+				fprintf(yyout, " ((3)) ");
 				tmp = tmp->next;
-			else
+			} else {
+				fprintf(yyout, " ((4)) ");
 				is_eq = 0;			
+			}
 		}
-		if (is_eq) {
-			/*printf("%d", i);*/
+		if (is_eq) { 
+			fprintf(yyout, " \n\n <<<<<< ");
+			print_sem_equation(a);
+			fprintf(yyout, " == ");
+			print_sem_equation(initial_equations[i]);
+			fprintf(yyout, " >>>>>> (%d)\n", i);
 			return i;
+		} else {
+			fprintf(yyout, " \n\n <<<<<< ");
+			print_sem_equation(a);
+			fprintf(yyout, " != ");
+			print_sem_equation(initial_equations[i]);
+			fprintf(yyout, " >>>>>> (%d)\n", i);
+			
 		}
 	}
 	return -1;
@@ -1348,7 +1396,6 @@ void calc_apriori_semantics(struct ast *r)
 		fprintf(yyout, " \nP(%d) = ", i);
 		print_sem_equation(equations[i]);
 		
-
 		struct ast * t = combining_par_composition(equations[i]);
 		if (t)
 			equations[i] = t;
