@@ -682,7 +682,7 @@ int apply_communication_rule(struct ast *a, struct ast *parent)
 			    strcmp(l2->name, r2->name) == 0) {
 				a->nodetype = SEM_GAMMA;
 				a->l = new_id(l1->name);
-				a->r = new_id(r1->name);
+				a->r = new_id(l2->name);
 			} else {
 				a->nodetype = SEM_NULL;
 				a->l = NULL;
@@ -906,7 +906,12 @@ int apply_equational_characterization(struct ast *a, struct ast *parent)
 			designate_equation(&a->r->r);
 		}
 	} else if (parent == NULL && (a->nodetype == '^' || a->nodetype == '*')) {
+		if (a->r && a->r->nodetype == '+') {
+			designate_equation(&a->r->l);
+			designate_equation(&a->r->r);
+		} else 
 			designate_equation(&a->r);
+		
 	}
 	apply_equational_characterization(a->l, a);
 	apply_equational_characterization(a->r, a);
@@ -1343,9 +1348,11 @@ void calc_apriori_semantics(struct ast *r)
 		fprintf(yyout, " \nP(%d) = ", i);
 		print_sem_equation(equations[i]);
 		
+
 		struct ast * t = combining_par_composition(equations[i]);
 		if (t)
 			equations[i] = t;
+
 		fprintf(yyout, " = \n\n+++ Optimize parallel composition +++\n\n = ");
 			print_sem_equation(equations[i]);
 		
