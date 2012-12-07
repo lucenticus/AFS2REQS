@@ -35,7 +35,8 @@ void count()
 			column += 8 - (column % 8);
 		else
 			column++;
-	ECHO;
+	if (logging)
+		ECHO;
 }
 static unsigned symhash(char *sym) 
 {
@@ -61,7 +62,8 @@ struct symbol* lookup(char *sym)
 		if (++sp >= symtab + NHASH)
 			sp = symtab;
 	}
-	fputs("symbol table overflow\n", stderr);
+	if (logging)
+		fputs("symbol table overflow\n", stderr);
 	abort();
 }
 
@@ -74,7 +76,8 @@ void addref(char *word, int type)
 		return;
 	r = malloc(sizeof(struct ref));
 	if (!r) {
-		fputs("out of space\n",stderr);
+		if (logging)
+			fputs("out of space\n",stderr);
 		abort();
 	}
 	r->next = sp->reflist;
@@ -87,7 +90,8 @@ struct ast * new_ast(int nodetype, struct ast *l, struct ast *r)
 	struct ast *a = malloc(sizeof(struct ast));
     
 	if (!a) {
-		yyerror("out of memory");
+		if (logging)
+			yyerror("out of memory");
 		exit(0);
 	}
 	a->nodetype = nodetype;
@@ -100,7 +104,8 @@ struct ast *new_id(char *id)
 {
 	struct term_id *a = malloc(sizeof(struct term_id));
 	if (!a) {
-		yyerror("out of memory");
+		if (logging)
+			yyerror("out of memory");
 		exit(0);
 	}
 	a->nodetype = NODE_ID;
@@ -119,7 +124,8 @@ struct ast *new_chan(struct ast *chan_id,
 {
 	struct term_chan *ch = malloc(sizeof(struct term_chan));
 	if (!ch) {
-		yyerror("out of memory");
+		if (logging)
+			yyerror("out of memory");
 		exit(0);
 	}
 	ch->nodetype = NODE_CHAN;
@@ -182,7 +188,8 @@ void search_processes(struct ast *a)
 	if (a->nodetype == NODE_CHAN || a->nodetype == NODE_FUNC) {
 		struct proc_list *node = malloc(sizeof(struct proc_list));
 		if (!node) {
-			yyerror("out of memory");
+			if (logging)
+				yyerror("out of memory");
 			exit(0);
 		}
 		node->proc = a;
@@ -208,12 +215,14 @@ struct ast* afs_to_sem(struct ast *a)
 		return a;
 	} else if (a->nodetype == NODE_CHAN) {
 		struct term_chan * ch = (struct term_chan *) a;
-		fprintf(yyout, "K%s = (CIN(", ch->id->name);
-		fprintf(yyout, "%s, %s) * ", 
-			ch->id->name, ch->in_id->name);
-		fprintf(yyout, "COUT(%s, %s))#", 
-			ch->id->name, ch->out_id->name);
-		fprintf(yyout, "\n");
+		if (logging) {
+			 fprintf(yyout, "K%s = (CIN(", ch->id->name);
+			 fprintf(yyout, "%s, %s) * ", 
+				 ch->id->name, ch->in_id->name);
+			 fprintf(yyout, "COUT(%s, %s))#", 
+				 ch->id->name, ch->out_id->name);
+			 fprintf(yyout, "\n");
+		}
 		struct ast *proc = malloc(sizeof(struct ast));
 		proc->nodetype = SEM_CPROC;
 		proc->l = (struct ast*) ch->id;
@@ -238,15 +247,21 @@ struct ast* afs_to_sem(struct ast *a)
 		proc->r = fix_op;
 		return proc;
 	} else if (a->nodetype == NODE_FUNC) {
-		fprintf(yyout, "P%s = ", ((struct term_id *)a->l)->name);
+		if (logging) {
+			fprintf(yyout, "P%s = ", ((struct term_id *)a->l)->name);
+		}
 		struct ast *proc = malloc(sizeof(struct ast));
 		proc->nodetype = SEM_PROC;
 		proc->r = afs_to_sem(a->r); 
 		proc->l = a->l;
-		fprintf(yyout, "\n");
+		if (logging) {
+			fprintf(yyout, "\n");
+		}
 		return proc;
 	} else if (a->nodetype == COM) {
-		fprintf(yyout, "A%s", ((struct term_id *)a->l)->name);
+		if (logging) {
+			fprintf(yyout, "A%s", ((struct term_id *)a->l)->name);
+		}
 		struct ast *com = malloc(sizeof(struct ast));
 		com->nodetype = SEM_COM;
 		com->l = a->l;
@@ -256,73 +271,93 @@ struct ast* afs_to_sem(struct ast *a)
 		struct ast *com = malloc(sizeof(struct ast));
 		com->nodetype = '*';
 		com->l = afs_to_sem(a->l);
-		fprintf(yyout, " * ");
+		if (logging) {
+			fprintf(yyout, " * ");
+		}
 		com->r = afs_to_sem(a->r);
 		return com;
 	} else if (a->nodetype == TRUE) {
-		fprintf(yyout, "T");
+		if (logging) {
+			fprintf(yyout, "T");
+		}
 		struct ast *t = malloc(sizeof(struct ast));
 		t->nodetype = SEM_T;
 		t->l = NULL;
 		t->r = NULL;
 		return t;
 	} else if (a->nodetype == FALSE) {
-		fprintf(yyout, "F");
+		if (logging) {
+			fprintf(yyout, "F");
+		}
 		struct ast *f = malloc(sizeof(struct ast));
 		f->nodetype = SEM_F;
 		f->l = NULL;
 		f->r = NULL;
 		return f;
 	} else if (a->nodetype == BOOL) {
-		fprintf(yyout, "B");
+		if (logging) {
+			fprintf(yyout, "B");
+		}
 		struct ast *b = malloc(sizeof(struct ast));
 		b->nodetype = SEM_B;
 		b->l = NULL;
 		b->r = NULL;
 		return b;
 	} else if (a->nodetype == SKIP) {
-		fprintf(yyout, "tau");
+		if (logging) {
+			fprintf(yyout, "tau");
+		}
 		struct ast *tau = malloc(sizeof(struct ast));
 		tau->nodetype = SEM_TAU;
 		tau->l = NULL;
 		tau->r = NULL;
 		return tau;
 	} else if (a->nodetype == EXIT) {
-		fprintf(yyout, "EXIT");
+		if (logging) {
+			fprintf(yyout, "EXIT");
+		}
 		struct ast *exit = malloc(sizeof(struct ast));
 		exit->nodetype = SEM_EXIT;
 		exit->l = NULL;
 		exit->r = NULL;
 		return exit;
 	} else if (a->nodetype == BREAK) {
-		fprintf(yyout, "BREAK");
+		if (logging) {
+			fprintf(yyout, "BREAK");
+		}
 		struct ast *br = malloc(sizeof(struct ast));
 		br->nodetype = SEM_BREAK;
 		br->l = NULL;
 		br->r = NULL;
 		return br;
 	} else if (a->nodetype == WAIT) {
-		fprintf(yyout, "TIME");
+		if (logging) {
+			fprintf(yyout, "TIME");
+		}
 		struct ast *time = malloc(sizeof(struct ast));
 		time->nodetype = SEM_TIME;
 		time->l = NULL;
 		time->r = NULL;
 		return time;
 	} else if (a->nodetype == READ) {
-		fprintf(yyout, "IN");
-		fprintf(yyout, "(%s, %s)", 
-			((struct term_id *)a->l)->name, 
-			((struct term_id *)a->r)->name);
+		if (logging) {
+			fprintf(yyout, "IN");
+			fprintf(yyout, "(%s, %s)", 
+				((struct term_id *)a->l)->name, 
+				((struct term_id *)a->r)->name);
+		}
 		struct ast *in = malloc(sizeof(struct ast));
 		in->nodetype = SEM_IN;
 		in->l = a->l;
 		in->r = a->r;
 		return in;
 	} else if (a->nodetype == WRITE) {
-		fprintf(yyout, "OUT");
-		fprintf(yyout, "(%s, %s)", 
-			((struct term_id *)a->l)->name, 
-			((struct term_id *)a->r)->name);
+		if (logging) {
+			fprintf(yyout, "OUT");
+			fprintf(yyout, "(%s, %s)", 
+				((struct term_id *)a->l)->name, 
+				((struct term_id *)a->r)->name);
+		}
 		struct ast *out = malloc(sizeof(struct ast));
 		out->nodetype = SEM_OUT;
 		out->l = a->l;
@@ -334,7 +369,9 @@ struct ast* afs_to_sem(struct ast *a)
 		struct ast *par_op = malloc(sizeof(struct ast));
 		par_op->nodetype = 'U';
 		par_op->l = afs_to_sem(a->l);
-		fprintf(yyout, " U ");
+		if (logging) {
+			fprintf(yyout, " U ");
+		}
 		par_op->r = afs_to_sem(a->r);
 		return par_op;
 	} else if (a->nodetype == ALT) {
@@ -342,7 +379,9 @@ struct ast* afs_to_sem(struct ast *a)
 		if (a->r) {
 			comp_op->nodetype = '+';
 			comp_op->l = afs_to_sem(a->l);
-			fprintf(yyout, " + ");
+			if (logging) {
+				fprintf(yyout, " + ");
+			}
 			comp_op->l = afs_to_sem(a->r);       
 		} else {
 			comp_op = afs_to_sem(a->l);
@@ -351,23 +390,31 @@ struct ast* afs_to_sem(struct ast *a)
 	} else if (a->nodetype == LOOP) {
 		struct ast *fix_op = malloc(sizeof(struct ast));
 		fix_op->nodetype = '#';
-		fprintf(yyout, "(");
+		if (logging) {
+			fprintf(yyout, "(");
+		}
 		fix_op->l = afs_to_sem(a->l);
 		fix_op->r = afs_to_sem(a->r);
-		fprintf(yyout, ")#");
+		if (logging) {
+			fprintf(yyout, ")#");
+		}
 		return fix_op;
 	} else if (a->nodetype == NODE_GC) {
 		struct ast *comp_op = malloc(sizeof(struct ast));
 		comp_op->nodetype = '^';
 		comp_op->l = afs_to_sem(a->l);
-		fprintf(yyout, " ^ ");
+		if (logging) {
+			fprintf(yyout, " ^ ");
+		}
 		comp_op->r =afs_to_sem(a->r); 
 		return comp_op;
 	} else if (a->nodetype == NODE_GC_LIST) {
 		struct ast *comp_op = malloc(sizeof(struct ast));
 		comp_op->nodetype = '+';
 		comp_op->l = afs_to_sem(a->l);
-		fprintf(yyout, " + ");
+		if (logging) {
+			fprintf(yyout, " + ");
+		}
 		comp_op->r = afs_to_sem(a->r);       		
 		return comp_op;
 	}
@@ -399,7 +446,6 @@ void proc_sem_to_par_comp()
 			tmp = tmp->next;
 		}
 	}
-	/*print_tree(sem_root);*/
 }
 
 int apply_distributive_law(struct ast *a, struct ast *parent) 
@@ -460,21 +506,28 @@ int apply_basis_axioms(struct ast *a, struct ast *parent)
 	if (a->nodetype == '*') {
 		if (a->l && a->l->nodetype == SEM_NULL) {
 			// @ * X = @
-			fprintf(yyout, "@ * X = @");
+
+			if (logging) {
+				fprintf(yyout, "@ * X = @");
+			}
 			a->nodetype = SEM_NULL;
 			a->l = NULL;
 			a->r = NULL;
 			return 1;
 		} else if (a->l && a->l->nodetype == SEM_TAU) {
 			// tau * X = X
-			fprintf(yyout, "tau * X = X");
+			if (logging) {
+				fprintf(yyout, "tau * X = X");
+			}
 			a->nodetype = a->r->nodetype;
 			a->l = a->r->l;
 			a->r = a->r->r;
 			return 1;
 		} else if (a->r && a->r->nodetype == SEM_TAU) {
 			// X * tau = X			
-			fprintf(yyout, "X * tau = X");
+			if (logging) {
+				fprintf(yyout, "X * tau = X");
+			}
 			a->nodetype = a->l->nodetype;
 			a->r = a->l->r;
 			a->l = a->l->l;
@@ -482,7 +535,9 @@ int apply_basis_axioms(struct ast *a, struct ast *parent)
 			return 1;
 		} else if (a->l && a->l->nodetype == '+') {
 			// (X + Y) * Z = X * Z + Y * Z
-			fprintf(yyout, "(X + Y) * Z = X * Z + Y * Z");
+			if (logging) {
+				fprintf(yyout, "(X + Y) * Z = X * Z + Y * Z");
+			}
 			struct ast *left_add = new_ast(a->nodetype, a->l->l, a->r);
 			struct ast *right_add = new_ast(a->nodetype, a->l->r, a->r);
 			a->nodetype = '+';
@@ -500,7 +555,9 @@ int apply_basis_axioms(struct ast *a, struct ast *parent)
 			return 1;
 		} */ else if (a->l && a->l->nodetype == '^') {
 			// (b ^ X) * Y = b ^ (X * Y)
-			fprintf(yyout, "(b ^ X) * Y = b ^ (X * Y)");
+			if (logging) {
+				fprintf(yyout, "(b ^ X) * Y = b ^ (X * Y)");
+			}
 			// TODO
 			return 0;
 		}
@@ -508,9 +565,13 @@ int apply_basis_axioms(struct ast *a, struct ast *parent)
 		if (a->l && 
 		    (a->l->nodetype == SEM_NULL || a->l->nodetype == SEM_F)) {
 			// F ^ X = @
-			fprintf(yyout, "F ^ X = @ or ");
+			if (logging) {
+				fprintf(yyout, "F ^ X = @ or ");
+			}
 			// @ ^ X = @
-			fprintf(yyout, "@ ^ X = @");
+			if (logging) {
+				fprintf(yyout, "@ ^ X = @");
+			}
 			a->nodetype = SEM_NULL;
 			a->l = NULL;
 			a->r = NULL;
@@ -519,7 +580,9 @@ int apply_basis_axioms(struct ast *a, struct ast *parent)
 	} else if (a->nodetype == '+') {
 		if (a->l && a->l->nodetype == SEM_NULL) {
 			// @ + X = X			
-			fprintf(yyout, "@ + X = X");
+			if (logging) {
+				fprintf(yyout, "@ + X = X");
+			}
 			a->nodetype = a->r->nodetype;
 			a->l = a->r->l;
 			a->r = a->r->r;
@@ -527,7 +590,9 @@ int apply_basis_axioms(struct ast *a, struct ast *parent)
 			return 1;
 		} else if (a->r && a->r->nodetype == SEM_NULL) {
 			// X + @ = X
-			fprintf(yyout, "X + @ = X");
+			if (logging) {
+				fprintf(yyout, "X + @ = X");
+			}
 			a->nodetype = a->l->nodetype;
 			a->r = a->l->r;
 			a->l = a->l->l;
@@ -539,10 +604,15 @@ int apply_basis_axioms(struct ast *a, struct ast *parent)
 			// a * X + a * Y = a * (X + Y)
 
 			if (is_equal_subtree(a->l->l, a->r->l)) {
-				if (a->l->nodetype == '^')
-					fprintf(yyout, "b ^ X + b ^ Y = b ^ (X + Y)");
-				else if (a->l->nodetype == '*')
-					fprintf(yyout, "a * X + a * Y = a * (X + Y)");
+				if (a->l->nodetype == '^') {
+					if (logging) {
+						fprintf(yyout, "b ^ X + b ^ Y = b ^ (X + Y)");
+					}
+				} else if (a->l->nodetype == '*') {
+					if (logging) {
+						fprintf(yyout, "a * X + a * Y = a * (X + Y)");
+					}
+				}
 				a->nodetype = a->l->nodetype;
 				a->r = new_ast('+', a->l->r, a->r->r);
 				a->l = a->l->l;
@@ -558,10 +628,15 @@ int apply_basis_axioms(struct ast *a, struct ast *parent)
 			// a * X + a * Y = a * (X + Y)
 
 			if (is_equal_subtree(a->l->l, a->r->l->l)) {
-				if (a->l->nodetype == '^')
-					fprintf(yyout, "b ^ X + b ^ Y = b ^ (X + Y)");
-				else if (a->l->nodetype == '*')
-					fprintf(yyout, "a * X + a * Y = a * (X + Y)");
+				if (a->l->nodetype == '^') {
+					if (logging) {
+						fprintf(yyout, "b ^ X + b ^ Y = b ^ (X + Y)");
+					}
+				} else if (a->l->nodetype == '*') {
+					if (logging) {
+						fprintf(yyout, "a * X + a * Y = a * (X + Y)");
+					}
+				}
 				a->l->r = new_ast(a->nodetype, a->l->r, a->r->l->r);
 				a->r = a->r->r;
 				return 1;
@@ -570,7 +645,9 @@ int apply_basis_axioms(struct ast *a, struct ast *parent)
 	} else if (a->nodetype == SEM_PAR) {
 		if (a->l && a->l->nodetype == SEM_TAU) {
 			// tau || X = X
-			fprintf(yyout, "tau || X = X");
+			if (logging) {
+				fprintf(yyout, "tau || X = X");
+			}
 			a->nodetype = a->r->nodetype;
 			a->l = a->r->l;
 			a->r = a->r->r;
@@ -578,7 +655,9 @@ int apply_basis_axioms(struct ast *a, struct ast *parent)
 		}
 		if (a->r && a->r->nodetype == SEM_TAU) {
 			// X || tau = X
-			fprintf(yyout, "X || tau = X");
+			if (logging) {
+				fprintf(yyout, "X || tau = X");
+			}
 			a->nodetype = a->l->nodetype;
 			a->r = a->l->r;
 			a->l = a->l->l;
@@ -757,14 +836,20 @@ int apply_encapsulation_operation(struct ast *a, struct ast *parent)
 void print_proc_list(struct ast *a) 
 {
 	struct proc_list *p = NULL;
-	get_proc_list(a, &p);      
-	fprintf(yyout, "\n Proc_list \n");
+	get_proc_list(a, &p);
+	if (logging) {
+		fprintf(yyout, "\n Proc_list \n");
+	}
 	while(p) {
-		fprintf(yyout, "\n ++++++++++ \n");
-		print_sem_equation(p->proc);
+		if (logging) {
+			fprintf(yyout, "\n ++++++++++ \n");		
+			print_sem_equation(p->proc);
+		}
 		p = p->next;
 	}
-	fprintf(yyout, "\n End proc list \n");
+	if (logging) {
+		fprintf(yyout, "\n End proc list \n");
+	}
 }
 void add_to_proc_list(struct proc_list **p, struct ast * a) 
 {
@@ -833,14 +918,22 @@ int get_list_size(struct proc_list *p)
 void print_list(struct proc_list *p) 
 {
 	struct proc_list *t = p;
-	fprintf(yyout, "\n ////////////////////////////////////////////////");
-	while (t) {
-		fprintf(yyout, "\n //////// ");
-		print_sem_equation(t->proc);
-		t = t->next;
-		fprintf(yyout, "\n //////// ");
+	if (logging) {
+		fprintf(yyout, "\n ////////////////////////////////////////////////");
 	}
-	fprintf(yyout, "\n ///////////////////////////////////////////////");
+	while (t) {
+		if (logging) {
+			fprintf(yyout, "\n //////// ");	
+			print_sem_equation(t->proc);
+		}
+		t = t->next;
+		if (logging) {
+			fprintf(yyout, "\n //////// ");
+		}
+	}
+	if (logging) {
+		fprintf(yyout, "\n ///////////////////////////////////////////////");
+	}
 	
 }
 int compare_proc_list(struct ast *a) 
@@ -864,7 +957,9 @@ int compare_proc_list(struct ast *a)
 		print_list(tmp2);
 		int is_eq = 1;
 		if (get_list_size(p) != get_list_size(tmp2)) {
-			fprintf(yyout, " ((0)) ");
+			if (logging) {
+				fprintf(yyout, " ((0)) ");
+			}
 			is_eq = 0;
 		}
 		
@@ -872,35 +967,46 @@ int compare_proc_list(struct ast *a)
 			struct proc_list *t = tmp2;
 			while (t) {
 				if (is_equal_subtree(tmp->proc, t->proc)) {
-					fprintf(yyout, " ((1)) ");
+					if (logging) {
+						fprintf(yyout, " ((1)) ");
+					}
 					break;
-				} else	{		
-					fprintf(yyout, " ((2)) ");
+				} else{
+					if (logging) {						
+						fprintf(yyout, " ((2)) ");
+					}
 					t = t->next;
 				}
 			}
 			if (t) {
-				fprintf(yyout, " ((3)) ");
+				if (logging) {
+					fprintf(yyout, " ((3)) ");
+				}
 				tmp = tmp->next;
 			} else {
-				fprintf(yyout, " ((4)) ");
+				if (logging) {
+					fprintf(yyout, " ((4)) ");
+				}
 				is_eq = 0;			
 			}
 		}
 		if (is_eq) { 
-			fprintf(yyout, " \n\n <<<<<< ");
-			print_sem_equation(a);
-			fprintf(yyout, " == ");
-			print_sem_equation(initial_equations[i]);
-			fprintf(yyout, " >>>>>> (%d)\n", i);
+			if (logging) {
+				fprintf(yyout, " \n\n <<<<<< ");
+				print_sem_equation(a);
+				fprintf(yyout, " == ");
+				print_sem_equation(initial_equations[i]);
+				fprintf(yyout, " >>>>>> (%d)\n", i);
+			}			
 			return i;
 		} else {
-			fprintf(yyout, " \n\n <<<<<< ");
-			print_sem_equation(a);
-			fprintf(yyout, " != ");
-			print_sem_equation(initial_equations[i]);
-			fprintf(yyout, " >>>>>> (%d)\n", i);
-			
+			if (logging) {
+				fprintf(yyout, " \n\n <<<<<< ");
+				print_sem_equation(a);
+				fprintf(yyout, " != ");
+				print_sem_equation(initial_equations[i]);
+				fprintf(yyout, " >>>>>> (%d)\n", i);
+			}			
 		}
 	}
 	return -1;
@@ -1021,11 +1127,13 @@ struct ast *build_optimizing_tree(struct proc_list *p)
 		tmp1 = tmp1->next;
 	}
 	if (first) {
-		fprintf(yyout, "\n{{ ");
-		print_sem_equation(first->first_comm);
-		fprintf(yyout, ",  ");
-		print_sem_equation(second->first_comm);
-		fprintf(yyout, " }}\n");
+		if (logging) {
+			fprintf(yyout, "\n{{ ");
+			print_sem_equation(first->first_comm);
+			fprintf(yyout, ",  ");
+			print_sem_equation(second->first_comm);
+			fprintf(yyout, " }}\n");
+		}
 		
 		struct ast *new_tree = NULL;
 		struct ast *tmp_node = NULL;
@@ -1046,9 +1154,11 @@ struct ast *build_optimizing_tree(struct proc_list *p)
 			}
 			tmp = tmp->next;	
 		}
-		fprintf(yyout, "\n{{ ");
-		print_sem_equation(new_tree);
-		fprintf(yyout, " }}\n");
+		if (logging) {
+			fprintf(yyout, "\n{{ ");
+			print_sem_equation(new_tree);
+			fprintf(yyout, " }}\n");
+		}
 		return new_tree;
 	} else
 		return NULL;
@@ -1058,15 +1168,16 @@ struct ast * combining_par_composition(struct ast *a)
 	struct proc_list *p = NULL;
 	get_proc_list(a, &p);
 	struct proc_list *t = p;
-	fprintf(yyout, "\n ////////////////////////////////////////////////");
-	while (t) {
-		fprintf(yyout, "\n //////// ");
-		print_sem_equation(t->proc);
-		t = t->next;
-		fprintf(yyout, "\n //////// ");		
+	if (logging) {
+		fprintf(yyout, "\n ////////////////////////////////////////////////");
+		while (t) {
+			fprintf(yyout, "\n //////// ");
+			print_sem_equation(t->proc);
+			t = t->next;
+			fprintf(yyout, "\n //////// ");		
+		}
+		fprintf(yyout, "\n ///////////////////////////////////////////////");
 	}
-	fprintf(yyout, "\n ///////////////////////////////////////////////");
-	
 	struct proc_list *tmp = p;
 	while (tmp) {
 		struct ast *comm_node = find_first_communication_node(tmp->proc);
@@ -1075,9 +1186,11 @@ struct ast * combining_par_composition(struct ast *a)
 			comm_node = find_first_communication_node(tmp->proc);
 		}
 		tmp->first_comm = comm_node;
-		fprintf(yyout, "\n ||| ");
-		print_sem_equation(comm_node);
-		fprintf(yyout, " ||| \n");
+		if (logging) {
+			fprintf(yyout, "\n ||| ");
+			print_sem_equation(comm_node);
+			fprintf(yyout, " ||| \n");
+		}
 		tmp = tmp->next;
 	}
 
@@ -1375,13 +1488,17 @@ void calc_apriori_semantics(struct ast *r)
 	} 
 	proc_sem_to_par_comp();
 	/*print_tree(sem_root);*/
-	fprintf(yyout, "\nP = ");
-	print_sem_equation(sem_root);
+	if (logging) {
+		fprintf(yyout, "\nP = ");
+		print_sem_equation(sem_root);
+	}
 	subst = NULL;
 	convert_min_fixed_point(sem_root, NULL);
 	remove_proc_node(sem_root, NULL);
-	fprintf(yyout, " = \n\n = ");
-	print_sem_equation(sem_root);	
+	if (logging) {
+		fprintf(yyout, " = \n\n = ");
+		print_sem_equation(sem_root);	
+	}
 	
 	equations[0] = sem_root;
 	int i = 1;
@@ -1392,91 +1509,129 @@ void calc_apriori_semantics(struct ast *r)
 		
 		initial_equations[i] = get_sem_tree_copy(equations[i]);
 		reduce_substitutions(initial_equations[i]);
-		fprintf(yyout, " \nP(%d) = ", i);
-		print_sem_equation(equations[i]);
+		if (logging) {
+			fprintf(yyout, " \nP(%d) = ", i);
+			print_sem_equation(equations[i]);
+		}
 		
 		struct ast * t = combining_par_composition(equations[i]);
 		if (t)
 			equations[i] = t;
-
-		fprintf(yyout, " = \n\n+++ Optimize parallel composition +++\n\n = ");
+		if (logging) {
+			fprintf(yyout, " = \n\n+++ Optimize parallel composition +++\n\n = ");
 			print_sem_equation(equations[i]);
+		}
 		
 		if (i > 1) 
 		  expand_needed_equations(equations[i]);
 		int retval = 0;
 		while(convert_par_composition(equations[i], NULL)) {			
-
-			fprintf(yyout, " = \n\n+++ Convert parallel composition +++\n\n = ");
-			print_sem_equation(equations[i]);
+			if (logging) {
+				fprintf(yyout, " = \n\n+++ Convert parallel composition +++\n\n = ");
+				print_sem_equation(equations[i]);
+			}
 
 			do {
-				fprintf(yyout, " = \n\n+++ Apply basis axiom : ");
+				if (logging) {
+					fprintf(yyout, " = \n\n+++ Apply basis axiom : ");
+				}
 				retval = apply_basis_axioms(equations[i], NULL);
-				fprintf(yyout, " +++\n\n = ");
-				print_sem_equation(equations[i]);
+				if (logging) {
+					fprintf(yyout, " +++\n\n = ");
+					print_sem_equation(equations[i]);
+				}
 			} while (retval);
 			apply_distributive_law(equations[i], NULL);
-			fprintf(yyout, " = \n\n+++ Apply distibutive rule +++\n\n = ");
-			print_sem_equation(equations[i]);
-			apply_axioms_for_communication(equations[i], NULL);
-			fprintf(yyout, " = \n\n+++ Apply axioms for communication +++\n\n = ");
-			print_sem_equation(equations[i]);
-			apply_communication_rule(equations[i], NULL);
-			fprintf(yyout, " = \n\n+++ Apply communication rule +++\n\n = ");
-			print_sem_equation(equations[i]);
-			do {
-				fprintf(yyout, " = \n\n+++ Apply basis axiom : ");
-				retval = apply_basis_axioms(equations[i], NULL);
-				fprintf(yyout, " +++\n\n = ");
+			if (logging) {
+				fprintf(yyout, " = \n\n+++ Apply distibutive rule +++\n\n = ");			
 				print_sem_equation(equations[i]);
+			}
+			apply_axioms_for_communication(equations[i], NULL);
+			if (logging) {
+				fprintf(yyout, " = \n\n+++ Apply axioms for communication +++\n\n = ");
+				print_sem_equation(equations[i]);
+			}
+			apply_communication_rule(equations[i], NULL);
+			if (logging) {
+				fprintf(yyout, " = \n\n+++ Apply communication rule +++\n\n = ");
+				print_sem_equation(equations[i]);
+			}
+			do {
+				if (logging) {
+					fprintf(yyout, " = \n\n+++ Apply basis axiom : ");
+				}
+				retval = apply_basis_axioms(equations[i], NULL);
+				if (logging) {
+					fprintf(yyout, " +++\n\n = ");
+					print_sem_equation(equations[i]);
+				}
 			} while (retval);
 			do {
 				retval = apply_axioms_for_ll_operation(equations[i], NULL);
-				fprintf(yyout, " = \n\n+++ Apply axioms for operation LL +++\n\n = ");
-				print_sem_equation(equations[i]);			
+				if (logging) {
+					fprintf(yyout, " = \n\n+++ Apply axioms for operation LL +++\n\n = ");
+					print_sem_equation(equations[i]);
+				}			
 			} while (retval);
 			
 			apply_encapsulation_operation(equations[i], NULL);
-			fprintf(yyout, " = \n\n+++ Apply encapsulation operation +++\n\n = ");
-			print_sem_equation(equations[i]);
+			if (logging) {
+				fprintf(yyout, " = \n\n+++ Apply encapsulation operation +++\n\n = ");
+				print_sem_equation(equations[i]);
+			}
 			
 			do {
-				fprintf(yyout, " = \n\n+++ Apply basis axiom : ");
+				if (logging) {
+					fprintf(yyout, " = \n\n+++ Apply basis axiom : ");
+				}
 				retval = apply_basis_axioms(equations[i], NULL);
-				fprintf(yyout, " +++\n\n = ");
-				print_sem_equation(equations[i]);
+				if (logging) {
+					fprintf(yyout, " +++\n\n = ");
+					print_sem_equation(equations[i]);
+				}
 			} while (retval);
 		}
-
+			
 		reduce_substitutions(equations[i]);
-		fprintf(yyout, " = \n\n+++ Reduce equations  +++\n\n");
-		print_sem_equation(equations[i]);
-		
-		do {
-			fprintf(yyout, " = \n\n+++ Apply basis axiom : ");
-			retval = apply_basis_axioms(equations[i], NULL);
-			fprintf(yyout, " +++\n\n = ");
+		if (logging) {
+			fprintf(yyout, " = \n\n+++ Reduce equations  +++\n\n");
 			print_sem_equation(equations[i]);
+		}
+		do {
+			if (logging) {
+				fprintf(yyout, " = \n\n+++ Apply basis axiom : ");
+			}
+			retval = apply_basis_axioms(equations[i], NULL);
+			if (logging) {
+				fprintf(yyout, " +++\n\n = ");			
+				print_sem_equation(equations[i]);
+			}
 		} while (retval);
 		
 		do {
 			retval = apply_axioms_for_ll_operation(equations[i], NULL);
-			fprintf(yyout, " = \n\n+++ Apply axioms for operation LL +++\n\n = ");
-			print_sem_equation(equations[i]);			
+			if (logging) {
+				fprintf(yyout, " = \n\n+++ Apply axioms for operation LL +++\n\n = ");
+				print_sem_equation(equations[i]);			
+			}
 		} while (retval);
 		
 		apply_equational_characterization(equations[i], NULL);
-		fprintf(yyout, " = \n\n+++ Apply equational_characterization +++\n\nP(%d) = ", i);
-		print_sem_equation(equations[i]);
-		fprintf(yyout, " \n\nlast index = %d \n", last_eq_index);
-		fprintf(yyout, " \n//////////////////////////////////////////////////////////// \n\n", i);
+		if (logging) {
+			fprintf(yyout, " = \n\n+++ Apply equational_characterization +++\n\nP(%d) = ", i);
+			print_sem_equation(equations[i]);
+			fprintf(yyout, " \n\nlast index = %d \n", last_eq_index);
+			fprintf(yyout, " \n//////////////////////////////////////////////////////////// \n\n", i);
+		}
 		i++;
 	}
-	fprintf(yyout, " = \n\n +++ Initial equations  +++\n\n");
+	
+	if (logging) {
+		fprintf(yyout, " = \n\n +++ Initial equations  +++\n\n");
+	}
 	i = 1;
 	while (i <= last_eq_index) {
-		fprintf(yyout, "\n++++++++++++++\nP(%d) = ", i);
+		fprintf(yyout, "\nP(%d) = ", i);
 		print_sem_equation(initial_equations[i]);
 		fprintf(yyout, " = ");
 		print_sem_equation(equations[i]);

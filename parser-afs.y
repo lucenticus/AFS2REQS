@@ -115,7 +115,7 @@ extern int column;
 int main(int argc, char *argv[]) 
 {
 	if (argc < 3) {
-		printf("usage:%s <afs file> <output file>\n", argv[0]);
+		printf("usage:%s <afs file> <output file> [--log]\n", argv[0]);
 		return 1;
 	} else { 
 		FILE *in, *out; 
@@ -128,6 +128,9 @@ int main(int argc, char *argv[])
 			printf("%s: can't open file: %s\n", argv[0], argv[2]);
 			return 1;
 		}
+		if (argc == 4) 
+			logging = 1;
+
 		yyin = in;
 		yyout = out;
 		yyparse();
@@ -140,5 +143,6 @@ int main(int argc, char *argv[])
 yyerror(char *s)
 {
 	fflush(stdout);
-	fprintf(yyout, "\n%*s\n%*s\n", column, "^", column, s);
+	if (logging)
+		fprintf(yyout, "\n%*s\n%*s\n", column, "^", column, s);
 }
