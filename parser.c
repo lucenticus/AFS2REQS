@@ -255,10 +255,6 @@ struct ast* afs_to_sem(struct ast *a)
 	} else if (a->nodetype == NODE_COM_LIST) {
 		struct ast *com = malloc(sizeof(struct ast));
 		com->nodetype = '*';
-		printf("\nLEFT:");
-		print_tree(a->l);
-		printf("\nRIGHT:");
-		print_tree(a->r);
 		com->l = afs_to_sem(a->l);
 		fprintf(yyout, " * ");
 		com->r = afs_to_sem(a->r);
@@ -853,15 +849,17 @@ int compare_proc_list(struct ast *a)
 	get_full_proc_list(a, &p);
 	
 	int i = 1;
-	for (i = 1; i < last_eq_index; i++) {
+	for (i = 1; i <= last_eq_index; i++) {
 		if (i == curr_eq_index)
 			continue;
 		if (is_equal_subtree(a, equations[i])) 
 			return i;
 		struct proc_list *tmp = p;		
 		struct proc_list *tmp2 = NULL;
-
-		get_full_proc_list(initial_equations[i], &tmp2);
+		if (i > curr_eq_index)
+			get_full_proc_list(equations[i], &tmp2);
+		else
+			get_full_proc_list(initial_equations[i], &tmp2);
 		print_list(tmp);
 		print_list(tmp2);
 		int is_eq = 1;
@@ -924,6 +922,7 @@ int designate_equation(struct ast **a)
 		struct ast *id = new_id(buf);
 		struct ast *n = new_ast(SEM_EQ, id, *a);
 		equations[last_eq_index] = get_sem_tree_copy(*a);
+
 		*a = n;
 		struct proc_list *p = NULL;
 		get_proc_list(*a, &p);

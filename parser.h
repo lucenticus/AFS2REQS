@@ -1,5 +1,5 @@
 /*
- * parser-afs.h - Parser from AFS to Recursive EQuations System
+ * parser.h - Parser from AFS to Recursive EQuations System
  *
  * Copyright (C) 2012 Evgeny Pavlov <lucenticus@gmail.com>
  *
@@ -32,12 +32,12 @@ enum NODETYPE {
 	NODE_CHAN_LIST,
 	NODE_CHAN,
 	NODE_COM,
-	NODE_COM_LIST,
+	NODE_PROGRAM,
 	NODE_FUNC_LIST,   /*5*/
 	NODE_FUNC,
 	NODE_GC_LIST,
 	NODE_GC,
-	NODE_PROGRAM,
+	NODE_COM_LIST,
 	SEM_PROC,        /*10*/
 	SEM_CPROC,
 	SEM_IN,
@@ -53,7 +53,7 @@ enum NODETYPE {
 	SEM_T,
 	SEM_COM,         
 	SEM_COM_LIST,
-	SEM_PAR,
+	SEM_PAR,        /*25*/
 	SEM_PARLL,
 	SEM_GAMMA,
 	SEM_NULL,
@@ -116,6 +116,8 @@ struct ast *initial_equations[MAX_EQ];
 struct ast *equations[MAX_EQ];
 
 struct symbol symtab[NHASH];
+void count();
+static unsigned symhash(char *sym) ;
 struct symbol *lookup(char*);
 void addref(char*, int);
 
@@ -126,31 +128,67 @@ struct ast *new_chan(struct ast *chan_id,
 		     struct ast *in_id, 
 		     struct ast *out_type, 
 		     struct ast *out_id);
-void count();
-void calc_apriori_semantics(struct ast *r);
-void proc_sem_to_par_comp();
+
+void print_tree(struct ast *a);
+struct ast * get_sem_tree_copy(struct ast *node);
 void search_processes(struct ast *a);
 struct ast* afs_to_sem(struct ast *a);
-void print_tree(struct ast *a);
+void proc_sem_to_par_comp();
+int apply_distributive_law(struct ast *a, struct ast *parent);
+int apply_basis_axioms(struct ast *a, struct ast *parent);
+int apply_axioms_for_communication(struct ast *a, struct ast *parent);
+
+int apply_communication_rule(struct ast *a, struct ast *parent);
+int apply_axioms_for_ll_operation(struct ast *a, struct ast *parent);
+int apply_encapsulation_operation(struct ast *a, struct ast *parent);
+
+void print_proc_list(struct ast *a);
+void add_to_proc_list(struct proc_list **p, struct ast * a);
+void get_proc_list(struct ast *a, struct proc_list **p);
+void get_full_proc_list(struct ast *a, struct proc_list **p);
+int get_list_size(struct proc_list *p);
+void print_list(struct proc_list *p);
+int compare_proc_list(struct ast *a);
+int designate_equation(struct ast **a);
+int apply_equational_characterization(struct ast *a, struct ast *parent);
+struct ast * find_first_communication_node(struct ast *a);
+int is_can_communication(struct ast *a, struct ast *b);
+struct ast *build_optimizing_tree(struct proc_list *p);
+struct ast * combining_par_composition(struct ast *a);
+int convert_par_composition(struct ast *a, struct ast *parent);
+void convert_min_fixed_point(struct ast *a, struct ast *curr_proc);
+void expand_needed_equations(struct ast *a);
+int is_exist_communication_op(struct ast *a);
+void reduce_substitutions(struct ast *a);
+void expand_substitutions(struct ast *a);
+int is_equal_subtree(struct ast *a, struct ast *b);
+
+void calc_apriori_semantics(struct ast *r);
+void remove_proc_node(struct ast *a, struct ast *parent);
+
+
+
+
+
 void print_sem_equation(struct ast *a);
 
 
-void remove_proc_node(struct ast *a, struct ast *parent);
 
-void convert_min_fixed_point(struct ast *a, struct ast *curr_proc);
-int convert_par_composition(struct ast *a, struct ast *parent);
-int apply_equational_characterization(struct ast *a, struct ast *parent);
-int apply_distributive_law(struct ast *a, struct ast *parent);
-int apply_basis_axioms(struct ast *a, struct ast *parent);
-int apply_communication_rule(struct ast *a, struct ast *parent);
-int apply_axioms_for_communication(struct ast *a, struct ast *parent);
-int apply_encapsulation_operation(struct ast *a, struct ast *parent);
-int apply_axioms_for_ll_operation(struct ast *a, struct ast *parent);
 
-void expand_substitutions(struct ast *a);
-void reduce_substitutions(struct ast *a);
-int is_equal_subtree(struct ast *a, struct ast *b);
-int is_exist_communication_op(struct ast *a);
-void get_proc_list(struct ast *a, struct proc_list **p);
-void add_to_proc_list(struct proc_list **p, struct ast * a);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 #endif /*PARSER_AFS_H*/
