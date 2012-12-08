@@ -829,6 +829,8 @@ int apply_encapsulation_operation(struct ast *a, struct ast *parent)
 			}
 		}
 	}
+	
+
 	apply_encapsulation_operation(a->l, a);
 	apply_encapsulation_operation(a->r, a);
 	return 0;
@@ -995,7 +997,10 @@ int compare_proc_list(struct ast *a)
 				fprintf(yyout, " \n\n <<<<<< ");
 				print_sem_equation(a);
 				fprintf(yyout, " == ");
-				print_sem_equation(initial_equations[i]);
+				if (i > curr_eq_index)
+					print_sem_equation(equations[i]);
+				else
+					print_sem_equation(initial_equations[i]);
 				fprintf(yyout, " >>>>>> (%d)\n", i);
 			}			
 			return i;
@@ -1004,7 +1009,11 @@ int compare_proc_list(struct ast *a)
 				fprintf(yyout, " \n\n <<<<<< ");
 				print_sem_equation(a);
 				fprintf(yyout, " != ");
-				print_sem_equation(initial_equations[i]);
+				if (i > curr_eq_index)
+					print_sem_equation(equations[i]);
+				else
+					print_sem_equation(initial_equations[i]);
+					
 				fprintf(yyout, " >>>>>> (%d)\n", i);
 			}			
 		}
@@ -1041,7 +1050,8 @@ int designate_equation(struct ast **a)
 		struct ast *id = new_id(buf);
 		struct ast *n = new_ast(SEM_EQ, id, *a);
 		*a = n;
-		initial_equations[last_eq_index] = initial_equations[indx];
+		if (last_eq_index != curr_eq_index)
+			initial_equations[last_eq_index] = initial_equations[indx];
 	}
 
 	return 1;
@@ -1579,7 +1589,7 @@ void calc_apriori_semantics(struct ast *r)
 				fprintf(yyout, " = \n\n+++ Apply encapsulation operation +++\n\n = ");
 				print_sem_equation(equations[i]);
 			}
-			
+
 			do {
 				if (logging) {
 					fprintf(yyout, " = \n\n+++ Apply basis axiom : ");
@@ -1597,6 +1607,7 @@ void calc_apriori_semantics(struct ast *r)
 			fprintf(yyout, " = \n\n+++ Reduce equations  +++\n\n");
 			print_sem_equation(equations[i]);
 		}
+
 		do {
 			if (logging) {
 				fprintf(yyout, " = \n\n+++ Apply basis axiom : ");
@@ -1615,11 +1626,25 @@ void calc_apriori_semantics(struct ast *r)
 				print_sem_equation(equations[i]);			
 			}
 		} while (retval);
-		
+
+		do {
+			if (logging) {
+				fprintf(yyout, " = \n\n+++ Apply basis axiom : ");
+			}
+			retval = apply_basis_axioms(equations[i], NULL);
+			if (logging) {
+				fprintf(yyout, " +++\n\n = ");			
+				print_sem_equation(equations[i]);
+			}
+		} while (retval);
 		apply_equational_characterization(equations[i], NULL);
 		if (logging) {
 			fprintf(yyout, " = \n\n+++ Apply equational_characterization +++\n\nP(%d) = ", i);
+			print_sem_equation(initial_equations[i]);
+			fprintf(yyout, " = ");
+
 			print_sem_equation(equations[i]);
+
 			fprintf(yyout, " \n\nlast index = %d \n", last_eq_index);
 			fprintf(yyout, " \n//////////////////////////////////////////////////////////// \n\n", i);
 		}
