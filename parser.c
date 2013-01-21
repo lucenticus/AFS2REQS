@@ -1536,7 +1536,7 @@ int is_equal_subtree(struct ast *a, struct ast *b) {
 	return 1;
 }
 
-void calc_apriori_semantics(struct ast *r) 
+int calc_apriori_semantics(struct ast *r) 
 {
 	search_processes(r);
 	struct proc_list *tmp = processes;
@@ -1550,7 +1550,6 @@ void calc_apriori_semantics(struct ast *r)
 		tmp = tmp->next;
 	} 
 	proc_sem_to_par_comp();
-	/*print_tree(sem_root);*/
 	if (logging) {
 		fprintf(yyout, "\nP = ");
 		print_sem_equation(sem_root);
@@ -1735,12 +1734,11 @@ void calc_apriori_semantics(struct ast *r)
 	i = 1;
 	while (i <= last_eq_index) {
 		fprintf(yyout, "\nP(%d) = ", i);
-		//print_sem_equation(initial_equations[i]);
-		//fprintf(yyout, " = ");
 		print_sem_equation(equations[i]);
 		fprintf(yyout, "\n");
 		i++;
 	}
+	return 0;
 }
 
 void remove_proc_node(struct ast *a, struct ast *parent) 

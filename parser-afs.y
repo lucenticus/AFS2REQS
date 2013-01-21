@@ -15,15 +15,23 @@
 	int tok;
 }
 
-%type <a> pr chan type fproc c gc g com
+%type <a> pr maybe_chan chan type fproc c gc g com
 %type <id> IDENTIFIER
 %type <tok> ALL ANY COM SKIP EXIT BREAK WAIT READ WRITE SEQ PAR ALT LOOP TRUE FALSE BOOL
 
 %%
 
-pr      : NET chan BEG fproc END 
+pr      : NET maybe_chan BEG fproc END 
 	{ root = new_ast(NODE_PROGRAM, $2, $4); }
-
+	;
+	
+maybe_chan
+	: /*empty*/ 
+	{ $$ = NULL; }
+	| chan
+	{ $$ = $1; }
+	;
+	
 chan    : CHAN IDENTIFIER ':' ':' type '('IDENTIFIER')' ':' type '(' IDENTIFIER ')' 
 	{ $$ = new_chan(new_id($2), $5, new_id($7), $10, new_id($12)); }
 
@@ -117,28 +125,38 @@ int main(int argc, char *argv[])
 	if (argc < 3) {
 		printf("usage:%s <afs file> <output file> [--log]\n", argv[0]);
 		return 1;
-	} else { 
-		FILE *in, *out; 
-		if ((in = fopen(argv[1], "r")) == NULL) {
-			printf("%s: can't open file: %s\n", argv[0], argv[1]);
-			return 1;
-		}
+	} 
+	FILE *in, *out; 
+	if ((in = fopen(argv[1], "r")) == NULL) {
+		printf("%s: can't open file: %s\n", argv[0], argv[1]);
+		return 1;
+	}
 	 
-		if ((out = fopen(argv[2], "w")) == NULL) {
-			printf("%s: can't open file: %s\n", argv[0], argv[2]);
-			return 1;
-		}
-		if (argc == 4) 
-			logging = 1;
+	if ((out = fopen(argv[2], "w")) == NULL) {
+		printf("%s: can't open file: %s\n", argv[0], argv[2]);
+		return 1;
+	}
+	if (argc == 4) 
+		logging = 1;
 
-		yyin = in;
-		yyout = out;
-		yyparse();
-		calc_apriori_semantics(root);
+	yyin = in;
+	yyout = out;
+	int retval = yyparse();
+	if (retval) {
 		fclose(in);
 		fclose(out);
+		printf("\nerr: can't finish parsing afs!");
+		return 1;
+	} 
+	retval = calc_apriori_semantics(root);
+	fclose(in);
+	fclose(out);
+	
+	if (retval) {
+		printf("\nerr: can't finish calculating semantics!");
+		return 1;
 	}
-	return 1;
+	return 0;
 }
 yyerror(char *s)
 {

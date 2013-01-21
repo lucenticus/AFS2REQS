@@ -163,7 +163,7 @@ void reduce_substitutions(struct ast *a);
 void expand_substitutions(struct ast *a);
 int is_equal_subtree(struct ast *a, struct ast *b);
 
-void calc_apriori_semantics(struct ast *r);
+int calc_apriori_semantics(struct ast *r);
 void remove_proc_node(struct ast *a, struct ast *parent);
 
 
