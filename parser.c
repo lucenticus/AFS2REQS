@@ -1566,7 +1566,7 @@ int calc_apriori_semantics(struct ast *r)
 	int i = 1;
 	equations[1] = get_sem_tree_copy(sem_root);
 
-	while (i <= last_eq_index) {
+	while (i <= last_eq_index && i < MAX_EQ) {
 		curr_eq_index = i;
 		
 		initial_equations[i] = get_sem_tree_copy(equations[i]);
@@ -1732,7 +1732,7 @@ int calc_apriori_semantics(struct ast *r)
 		fprintf(yyout, " = \n\n +++ Initial equations  +++\n\n");
 	}
 	i = 1;
-	while (i <= last_eq_index) {
+	while (i <= last_eq_index && i < MAX_EQ) {
 		fprintf(yyout, "\nP(%d) = ", i);
 		print_sem_equation(equations[i]);
 		fprintf(yyout, "\n");

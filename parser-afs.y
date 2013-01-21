@@ -102,8 +102,8 @@ g	: TRUE
 	| FALSE
 	{ $$ = new_ast(FALSE, NULL, NULL); }
 
-	| BOOL
-	{ $$ = new_ast(BOOL, NULL, NULL); }
+	| BOOL '(' IDENTIFIER ')'
+	{ $$ = new_ast(BOOL, new_id($3), NULL); }
 
 	| WAIT '(' IDENTIFIER ')'
 	{ $$ = new_ast(WAIT, new_id($3), NULL); }
