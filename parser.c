@@ -425,10 +425,7 @@ void proc_sem_to_par_comp()
 	struct proc_list *tmp = sem_processes;
 	sem_root = NULL;
 	if (!tmp)
-		return;
-	struct proc_list *tmp2 = tmp->next;
-	struct proc_list *tmp3 = tmp->next->next;
-	
+		return;	
 	while (tmp) {
 		if (!sem_root && tmp->next) {
 			struct ast *proc = malloc(sizeof(struct ast));
@@ -443,6 +440,8 @@ void proc_sem_to_par_comp()
 			proc->l = sem_root;
 			proc->r = tmp->proc;
 			sem_root = proc;
+			tmp = tmp->next;
+		} else {
 			tmp = tmp->next;
 		}
 	}
