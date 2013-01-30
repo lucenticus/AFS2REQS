@@ -24,7 +24,7 @@
 #ifndef PARSER_AFS_H
 #define PARSER_AFS_H
 #define NHASH (9997)
-#define MAX_EQ (1024)
+#define MAX_EQ (10)
 #include <stdlib.h>
 
 enum NODETYPE {

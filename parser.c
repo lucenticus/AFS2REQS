@@ -1,5 +1,6 @@
 /*
- * parser-afs.c - Parser from AFS to Recursive EQuations System
+ * parser-afs.c - Parser from language of Asynchronous Functional Schemes 
+ * to Recursive EQuations System
  *
  * Copyright (C) 2012 Evgeny Pavlov <lucenticus@gmail.com>
  *
@@ -35,7 +36,7 @@ void count()
 			column += 8 - (column % 8);
 		else
 			column++;
-	if (logging)
+	//if (logging)
 		ECHO;
 }
 static unsigned symhash(char *sym) 
@@ -456,38 +457,62 @@ int apply_distributive_law(struct ast *a, struct ast *parent)
 		if (a->l && a->l->nodetype == '+') {
 			if (parent && parent->nodetype == '+') {
 				if (parent->l == a) {
-					struct ast *n1 = malloc(sizeof(struct ast));
+					struct ast *n1 =
+						malloc(sizeof(struct ast));
 					n1->nodetype = '+';
 					n1->r = parent->r;
-					n1->l = new_ast(a->nodetype, a->l->r, a->r);
+					n1->l = new_ast(a->nodetype, 
+							a->l->r, 
+							a->r);
 					parent->r = n1;
-					parent->l = new_ast(a->nodetype, a->l->l, a->r);
+					parent->l = new_ast(a->nodetype, 
+							    a->l->l, 
+							    a->r);
+					free(a);
 					a = parent;
 				} else {
-					struct ast *n1 = malloc(sizeof(struct ast));
+					struct ast *n1 = 
+						malloc(sizeof(struct ast));
 					n1->nodetype = '+';
-					n1->l = new_ast(a->nodetype, a->l->l, a->r);
-					n1->r = new_ast(a->nodetype, a->l->r, a->r);
+					n1->l = new_ast(a->nodetype, 
+							a->l->l, 
+							a->r);
+					n1->r = new_ast(a->nodetype, 
+							a->l->r, 
+							a->r);
 					parent->r = n1;
+					free(a);
 					a = parent;
 				}
 			}
 		} else if (a->r && a->r->nodetype == '+') {
 			if (parent && parent->nodetype == '+') {
 				if (parent->l == a) {
-					struct ast *n1 = malloc(sizeof(struct ast));
+					struct ast *n1 = 
+						malloc(sizeof(struct ast));
 					n1->nodetype = '+';
 					n1->r = parent->r;
-					n1->l = new_ast(a->nodetype, a->l, a->r->r);
+					n1->l = new_ast(a->nodetype, 
+							a->l, 
+							a->r->r);
 					parent->r = n1;
-					parent->l = new_ast(a->nodetype, a->l, a->r->l);
+					parent->l = new_ast(a->nodetype, 
+							    a->l, 
+							    a->r->l);
+					free(a);
 					a = parent;
 				} else {
-					struct ast *n1 = malloc(sizeof(struct ast));
+					struct ast *n1 = 
+						malloc(sizeof(struct ast));
 					n1->nodetype = '+';
-					n1->l = new_ast(a->nodetype, a->l, a->r->l);
-					n1->r = new_ast(a->nodetype, a->l, a->r->r);
+					n1->l = new_ast(a->nodetype, 
+							a->l, 
+							a->r->l);
+					n1->r = new_ast(a->nodetype, 
+							a->l, 
+							a->r->r);
 					parent->r = n1;
+					free(a);
 					a = parent;
 				} 
 			}		
@@ -537,8 +562,12 @@ int apply_basis_axioms(struct ast *a, struct ast *parent)
 			if (logging) {
 				fprintf(yyout, "(X + Y) * Z = X * Z + Y * Z");
 			}
-			struct ast *left_add = new_ast(a->nodetype, a->l->l, a->r);
-			struct ast *right_add = new_ast(a->nodetype, a->l->r, a->r);
+			struct ast *left_add = new_ast(a->nodetype, 
+						       a->l->l, 
+						       a->r);
+			struct ast *right_add = new_ast(a->nodetype, 
+							a->l->r, 
+							a->r);
 			a->nodetype = '+';
 			a->l = left_add;
 			a->r = right_add;		       
@@ -546,8 +575,10 @@ int apply_basis_axioms(struct ast *a, struct ast *parent)
 		} /*else if (a->r && a->r->nodetype == '+') {
 			// X * (Y + Z) = X * Y + X * Z
 			fprintf(yyout, "X * (Y + Z) = X * Y + X * Z");
-			struct ast *left_add = new_ast(a->nodetype, a->l, a->r->l);
-			struct ast *right_add = new_ast(a->nodetype, a->l, a->r->r);
+			struct ast *left_add = 
+			new_ast(a->nodetype, a->l, a->r->l);
+			struct ast *right_add = 
+			new_ast(a->nodetype, a->l, a->r->r);
 			a->nodetype = '+';
 			a->l = left_add;
 			a->r = right_add;		       
@@ -597,8 +628,10 @@ int apply_basis_axioms(struct ast *a, struct ast *parent)
 			a->l = a->l->l;
 
 			return 1;
-			} else if (a->l && a->l->nodetype == '^' &&  a->r && a->r->nodetype == '^' || 
-			   a->l && a->l->nodetype == '*' &&  a->r && a->r->nodetype == '*') {
+		} else if (a->l && a->l->nodetype == '^' &&  
+			   a->r && a->r->nodetype == '^' || 
+			   a->l && a->l->nodetype == '*' &&  
+			   a->r && a->r->nodetype == '*') {
 			// b ^ X + b ^ Y = b ^ (X + Y)
 			// a * X + a * Y = a * (X + Y)
 
@@ -941,7 +974,8 @@ void print_list(struct proc_list *p)
 {
 	struct proc_list *t = p;
 	if (logging) {
-		fprintf(yyout, "\n ////////////////////////////////////////////////");
+		fprintf(yyout, 
+			"\n ////////////////////////////////////////////////");
 	}
 	while (t) {
 		if (logging) {
@@ -954,7 +988,8 @@ void print_list(struct proc_list *p)
 		}
 	}
 	if (logging) {
-		fprintf(yyout, "\n ///////////////////////////////////////////////");
+		fprintf(yyout, 
+			"\n ///////////////////////////////////////////////");
 	}
 	
 }
@@ -1072,8 +1107,10 @@ int designate_equation(struct ast **a)
 		struct ast *id = new_id(buf);
 		struct ast *n = new_ast(SEM_EQ, id, *a);
 		*a = n;
-		if (last_eq_index != curr_eq_index)
-			initial_equations[last_eq_index] = initial_equations[indx];
+		if (last_eq_index != curr_eq_index) {
+			initial_equations[last_eq_index] = 
+				initial_equations[indx];
+		}
 	}
 
 	return 1;
@@ -1084,21 +1121,24 @@ int apply_equational_characterization(struct ast *a, struct ast *parent)
 		return 0;
 
 	if (a->nodetype == '+') {
-		if (a->l && (a->l->nodetype == '^' || a->l->nodetype == '*')) {
+		if (a->l && 
+		    (a->l->nodetype == '^' || a->l->nodetype == '*')) {
 			if (a->l->r && a->l->r->nodetype == '+') {
 				designate_equation(&a->l->r->l);
 				designate_equation(&a->l->r->r);
 			} else
 				designate_equation(&a->l->r);
 		} 
-		if (a->r && (a->r->nodetype == '^' || a->r->nodetype == '*')) {
+		if (a->r && 
+		    (a->r->nodetype == '^' || a->r->nodetype == '*')) {
 			if (a->r->r && a->r->r->nodetype == '+') {
 				designate_equation(&a->r->r->l);
 				designate_equation(&a->r->r->r);
 			} else
 				designate_equation(&a->r->r);
 		}
-	} else if (parent == NULL && (a->nodetype == '^' || a->nodetype == '*')) {
+	} else if (parent == NULL && 
+		   (a->nodetype == '^' || a->nodetype == '*')) {
 		if (a->r && a->r->nodetype == '+') {
 			designate_equation(&a->r->l);
 			designate_equation(&a->r->r);
@@ -1158,7 +1198,8 @@ struct ast *build_optimizing_tree(struct proc_list *p)
 				continue;
 			}
 			
-			if (is_can_communication(tmp1->first_comm, tmp2->first_comm)) {
+			if (is_can_communication(tmp1->first_comm, 
+						 tmp2->first_comm)) {
 				first = tmp1;
 				second = tmp2;
 			}
@@ -1231,14 +1272,16 @@ struct ast * combining_par_composition(struct ast *a)
 	get_proc_list(a, &p);      
 	struct proc_list *t = p;
 	if (logging) {
-		fprintf(yyout, "\n ////////////////////////////////////////////////");
+		fprintf(yyout, 
+			"\n ////////////////////////////////////////////////");
 		while (t) {
 			fprintf(yyout, "\n //////// ");
 			print_sem_equation(t->proc);
 			t = t->next;
 			fprintf(yyout, "\n //////// ");		
 		}
-		fprintf(yyout, "\n ///////////////////////////////////////////////");
+		fprintf(yyout, 
+			"\n ///////////////////////////////////////////////");
 	}
 	struct proc_list *tmp = p;
 	while (tmp) {
@@ -1358,10 +1401,13 @@ void convert_min_fixed_point(struct ast *a, struct ast *curr_proc)
 				tmp = tmp->r;					
 			} 
 			if (tmp == NULL) {
-				printf("\nERROR in convert_min_fixed_point: can't find right operand");
+				printf("\nERROR in convert_min_fixed_point: \
+					can't find right operand");
 				return;
 			}
-			struct ast * pr = new_ast(curr_proc->nodetype, curr_proc->l, NULL);
+			struct ast * pr = new_ast(curr_proc->nodetype, 
+						  curr_proc->l, 
+						  NULL);
 			struct ast * cp = get_sem_tree_copy(tmp);
 			tmp->nodetype = '*';
 			tmp->r = pr;
@@ -1380,15 +1426,16 @@ void convert_min_fixed_point(struct ast *a, struct ast *curr_proc)
 							   get_sem_tree_copy(a->l));
 				subst->next = NULL;
 			} else {
-				struct subst_list *n = malloc(sizeof(struct subst_list));
+				struct subst_list *n = 
+					malloc(sizeof(struct subst_list));
 				if (a->nodetype == '+')
 					n->p = new_ast(pr->nodetype, 
-							   pr->l, 
-							   get_sem_tree_copy(a));
+						       pr->l, 
+						       get_sem_tree_copy(a));
 				else
 					n->p = new_ast(pr->nodetype, 
-							   pr->l, 
-							   get_sem_tree_copy(a->l));
+						       pr->l, 
+						       get_sem_tree_copy(a->l));
 				n->next = subst;
 				subst = n;
 			}
@@ -1402,10 +1449,12 @@ void convert_min_fixed_point(struct ast *a, struct ast *curr_proc)
 				tmp = tmp->r;					
 			} 
 			if (tmp == NULL) {
-				printf("\nERROR in convert_min_fixed_point: can't find right operand");
+				printf("\nERROR in convert_min_fixed_point: \
+					can't find right operand");
 				return;
 			}
-			struct  ast* pr = new_ast(curr_proc->nodetype, curr_proc->l, NULL);						
+			struct  ast* pr = new_ast(curr_proc->nodetype, 
+						  curr_proc->l, NULL);
 			struct ast * proc_comp = new_ast('*', tmp->r, pr);
 			
 			proc_comp->r = pr;
@@ -1418,10 +1467,11 @@ void convert_min_fixed_point(struct ast *a, struct ast *curr_proc)
 						   get_sem_tree_copy(a->l));
 				subst->next = NULL;
 			} else {
-				struct subst_list *n = malloc(sizeof(struct subst_list));
+				struct subst_list *n = 
+					malloc(sizeof(struct subst_list));
 				n->p = new_ast(pr->nodetype, 
-						   pr->l, 
-						   get_sem_tree_copy(a->l));
+					       pr->l, 
+					       get_sem_tree_copy(a->l));
 				n->next = subst;
 				subst = n;
 			}
@@ -1443,7 +1493,9 @@ void expand_needed_equations(struct ast *a)
 		if (a->l && !is_exist_communication_op(a->l)) {
 			expand_substitutions(a->l);
 		}
-		if (a->r && a->r->nodetype != SEM_PAR && !is_exist_communication_op(a->r)) {
+		if (a->r && 
+		    a->r->nodetype != SEM_PAR && 
+		    !is_exist_communication_op(a->r)) {
 			expand_substitutions(a->r);
 		}
 	}
@@ -1476,7 +1528,8 @@ void expand_substitutions(struct ast *a)
 			if (tmp->p && tmp->p->nodetype == a->nodetype &&
 			    tmp->p->l && tmp->p->r && a->l) {
 				if (strcmp(((struct term_id *)tmp->p->l)->name, 
-					   ((struct term_id *)a->l)->name) == 0) {
+					   ((struct term_id *)a->l)->name) == 0)
+					{
 					
 					a->nodetype = tmp->p->r->nodetype;
 					a->l = get_sem_tree_copy(tmp->p->r->l);
@@ -1523,7 +1576,8 @@ int is_equal_subtree(struct ast *a, struct ast *b) {
 	}
 	if (a->nodetype == b->nodetype &&
 	    a->nodetype == NODE_ID &&
-	    strcmp(((struct term_id *)a)->name,((struct term_id *)b)->name) != 0) {
+	    strcmp(((struct term_id *)a)->name,
+		   ((struct term_id *)b)->name) != 0) {
 		return 0;
 	}
 	
@@ -1773,9 +1827,11 @@ void print_sem_equation(struct ast *a)
 		   a->nodetype == SEM_CPROC) {
 		if (a->r == NULL) {
 			if (a->nodetype == SEM_PROC) {
-				fprintf(yyout, "P%s", ((struct term_id*)a->l)->name);
+				fprintf(yyout, "P%s", 
+					((struct term_id*)a->l)->name);
 			} else {
-				fprintf(yyout, "K%s", ((struct term_id*)a->l)->name);
+				fprintf(yyout, "K%s", 
+					((struct term_id*)a->l)->name);
 			}
 		} else
 			print_sem_equation(a->r);
