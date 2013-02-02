@@ -452,6 +452,8 @@ int apply_distributive_law(struct ast *a, struct ast *parent)
 {
 	if (a == NULL)
 		return 0;
+
+
 	if (a->nodetype == SEM_PARLL ||
 	    a->nodetype == '|') {
 		if (a->l && a->l->nodetype == '+') {
@@ -470,6 +472,7 @@ int apply_distributive_law(struct ast *a, struct ast *parent)
 							    a->r);
 					free(a);
 					a = parent;
+					//printf("1");
 				} else {
 					struct ast *n1 = 
 						malloc(sizeof(struct ast));
@@ -483,6 +486,7 @@ int apply_distributive_law(struct ast *a, struct ast *parent)
 					parent->r = n1;
 					free(a);
 					a = parent;
+					//printf("2");
 				}
 			}
 		} else if (a->r && a->r->nodetype == '+') {
@@ -501,6 +505,7 @@ int apply_distributive_law(struct ast *a, struct ast *parent)
 							    a->r->l);
 					free(a);
 					a = parent;
+					//printf("3");
 				} else {
 					struct ast *n1 = 
 						malloc(sizeof(struct ast));
@@ -514,6 +519,7 @@ int apply_distributive_law(struct ast *a, struct ast *parent)
 					parent->r = n1;
 					free(a);
 					a = parent;
+					//printf("4");
 				} 
 			}		
 		}
@@ -1617,11 +1623,12 @@ int calc_apriori_semantics(struct ast *r)
 	
 	equations[0] = sem_root;
 	int i = 1;
+	int iter = 0;
 	equations[1] = get_sem_tree_copy(sem_root);
-
+	printf("%d", i);
 	while (i <= last_eq_index && i < MAX_EQ) {
 		curr_eq_index = i;
-		
+		printf("%d\n", i);
 		initial_equations[i] = get_sem_tree_copy(equations[i]);
 		reduce_substitutions(initial_equations[i]);
 		if (logging) {
@@ -1641,7 +1648,10 @@ int calc_apriori_semantics(struct ast *r)
 		if (i > 1) 
 		  expand_needed_equations(equations[i]);
 		int retval = 0;
-		while(convert_par_composition(equations[i], NULL)) {			
+		int par_iter = 0;
+		while(convert_par_composition(equations[i], NULL) && 
+		      par_iter++ < MAX_ITER) {
+			
 			apply_distributive_law(equations[i], NULL);
 			if (logging) {
 				fprintf(yyout, " = \n\n+++ Apply distibutive rule +++\n\n = ");			
@@ -1651,6 +1661,7 @@ int calc_apriori_semantics(struct ast *r)
 				fprintf(yyout, " = \n\n+++ Convert parallel composition +++\n\n = ");
 				print_sem_equation(equations[i]);
 			}
+			iter = 0;
 			do {
 				if (logging) {
 					fprintf(yyout, " = \n\n+++ Apply basis axiom : ");
@@ -1660,13 +1671,14 @@ int calc_apriori_semantics(struct ast *r)
 					fprintf(yyout, " +++\n\n = ");
 					print_sem_equation(equations[i]);
 				}
-			} while (retval);
+			} while (retval && iter++ < MAX_ITER);
 			apply_distributive_law(equations[i], NULL);
 			if (logging) {
 				fprintf(yyout, " = \n\n+++ Apply distibutive rule +++\n\n = ");			
 				print_sem_equation(equations[i]);
 			}
 			
+			iter = 0;
 			do {
 				if (logging) {
 					fprintf(yyout, " = \n\n+++ Apply axioms for communication +++\n\n = ");
@@ -1676,9 +1688,9 @@ int calc_apriori_semantics(struct ast *r)
 					fprintf(yyout, " +++\n\n = ");
 					print_sem_equation(equations[i]);
 				}
-			} while (retval);
+			} while (retval && iter++ < MAX_ITER);
 
-			
+			iter = 0;
 			do {
 				if (logging) {
 					fprintf(yyout, " = \n\n+++ Apply communication rule +++\n\n = ");
@@ -1688,8 +1700,8 @@ int calc_apriori_semantics(struct ast *r)
 					fprintf(yyout, " +++\n\n = ");
 					print_sem_equation(equations[i]);
 				}
-			} while (retval);
-
+			} while (retval && iter++ < MAX_ITER);
+			iter = 0;
 			do {
 				if (logging) {
 					fprintf(yyout, " = \n\n+++ Apply basis axiom : ");
@@ -1699,14 +1711,16 @@ int calc_apriori_semantics(struct ast *r)
 					fprintf(yyout, " +++\n\n = ");
 					print_sem_equation(equations[i]);
 				}
-			} while (retval);
+			} while (retval && iter++ < MAX_ITER);
+
+			iter = 0;
 			do {
 				retval = apply_axioms_for_ll_operation(equations[i], NULL);
 				if (logging) {
 					fprintf(yyout, " = \n\n+++ Apply axioms for operation LL +++\n\n = ");
 					print_sem_equation(equations[i]);
 				}			
-			} while (retval);
+			} while (retval && iter++ < MAX_ITER);
 			
 			
 		}
@@ -1716,7 +1730,8 @@ int calc_apriori_semantics(struct ast *r)
 			fprintf(yyout, " = \n\n+++ Reduce equations  +++\n\n");
 			print_sem_equation(equations[i]);
 		}
-
+		
+		iter = 0;
 		do {
 			if (logging) {
 				fprintf(yyout, " = \n\n+++ Apply basis axiom : ");
@@ -1726,16 +1741,18 @@ int calc_apriori_semantics(struct ast *r)
 				fprintf(yyout, " +++\n\n = ");			
 				print_sem_equation(equations[i]);
 			}
-		} while (retval);
+		} while (retval && iter++ < MAX_ITER);
 		
+		iter = 0;
 		do {
 			retval = apply_axioms_for_ll_operation(equations[i], NULL);
 			if (logging) {
 				fprintf(yyout, " = \n\n+++ Apply axioms for operation LL +++\n\n = ");
 				print_sem_equation(equations[i]);			
 			}
-		} while (retval);
-
+		} while (retval && iter++ < MAX_ITER);
+		
+		iter = 0;
 		do {
 			if (logging) {
 				fprintf(yyout, " = \n\n+++ Apply basis axiom : ");
@@ -1745,13 +1762,14 @@ int calc_apriori_semantics(struct ast *r)
 				fprintf(yyout, " +++\n\n = ");			
 				print_sem_equation(equations[i]);
 			}
-		} while (retval);
+		} while (retval && iter++ < MAX_ITER);
 		apply_encapsulation_operation(equations[i], NULL);
 		if (logging) {
 			fprintf(yyout, " = \n\n+++ Apply encapsulation operation +++\n\n = ");
 			print_sem_equation(equations[i]);
 		}
 		
+		iter = 0;
 		do {
 			if (logging) {
 				fprintf(yyout, " = \n\n+++ Apply basis axiom : ");
@@ -1761,7 +1779,7 @@ int calc_apriori_semantics(struct ast *r)
 				fprintf(yyout, " +++\n\n = ");
 				print_sem_equation(equations[i]);
 			}
-		} while (retval);
+		} while (retval && iter++ < MAX_ITER);
 			
 
 	

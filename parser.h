@@ -25,6 +25,7 @@
 #define PARSER_AFS_H
 #define NHASH (9997)
 #define MAX_EQ (10)
+#define MAX_ITER (7)
 #include <stdlib.h>
 
 enum NODETYPE {
@@ -166,29 +167,6 @@ int is_equal_subtree(struct ast *a, struct ast *b);
 int calc_apriori_semantics(struct ast *r);
 void remove_proc_node(struct ast *a, struct ast *parent);
 
-
-
-
-
 void print_sem_equation(struct ast *a);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 #endif /*PARSER_AFS_H*/
