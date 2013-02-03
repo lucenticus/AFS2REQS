@@ -1612,6 +1612,7 @@ int calc_apriori_semantics(struct ast *r)
 	search_processes(r);
 	struct proc_list *tmp = processes;
 	sem_processes = NULL;
+	int proc_count = 0;
 	while (tmp) {
 		struct ast *sem_proc = afs_to_sem(tmp->proc);
 		struct proc_list *proc = malloc(sizeof(struct proc_list));
@@ -1619,7 +1620,14 @@ int calc_apriori_semantics(struct ast *r)
 		proc->next = sem_processes;
 		sem_processes = proc;
 		tmp = tmp->next;
+		proc_count++;
 	} 
+	if (proc_count > MAX_PROC) {
+		fprintf(yyout, 
+			"\nFile wasn't parsed, process count == %d\n", 
+			proc_count);
+		return 1;
+	}
 	proc_sem_to_par_comp();
 	if (logging) {
 		fprintf(yyout, "\nP = ");
@@ -1834,6 +1842,10 @@ int calc_apriori_semantics(struct ast *r)
 	i = 1;
 	while (i <= last_eq_index && i < MAX_EQ) {
 		fprintf(yyout, "\nP(%d) = ", i);
+		/* print_sem_equation(initial_equations[i]); */
+
+		/* fprintf(yyout, " = "); */
+
 		print_sem_equation(equations[i]);
 		fprintf(yyout, "\n");
 		i++;
