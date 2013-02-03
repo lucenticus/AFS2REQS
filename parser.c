@@ -842,6 +842,18 @@ int apply_axioms_for_ll_operation(struct ast *a, struct ast *parent)
 			a->l = a->l->l;
 			a->r = n;
 			return 1;
+		} else if (a->l && 
+			   (a->l->nodetype == SEM_IN ||
+			    a->l->nodetype == SEM_CIN ||
+			    a->l->nodetype == SEM_OUT ||
+			    a->l->nodetype == SEM_COUT || 
+			    a->l->nodetype == SEM_GAMMA || 
+			    a->l->nodetype == SEM_COM ||
+			    a->l->nodetype == SEM_TAU ||
+			    a->l->nodetype == SEM_NULL )) {
+			a->nodetype = '*';
+			return 1;
+			
 		}
 	}
 	int retval = apply_axioms_for_ll_operation(a->l, a);
@@ -1722,7 +1734,24 @@ int calc_apriori_semantics(struct ast *r)
 				}			
 			} while (retval && iter++ < MAX_ITER);
 			
+			/* apply_encapsulation_operation(equations[i], NULL); */
+			/* if (logging) { */
+			/* 	fprintf(yyout, " = \n\n+++ Apply encapsulation operation +++\n\n = "); */
+			/* 	print_sem_equation(equations[i]); */
+			/* } */
 			
+			/* iter = 0; */
+			/* do { */
+			/* 	if (logging) { */
+			/* 		fprintf(yyout, " = \n\n+++ Apply basis axiom : "); */
+			/* } */
+			/* 	retval = apply_basis_axioms(equations[i], NULL); */
+			/* 	if (logging) { */
+			/* 		fprintf(yyout, " +++\n\n = "); */
+			/* 		print_sem_equation(equations[i]); */
+			/* 	} */
+			/* } while (retval && iter++ < MAX_ITER); */
+		
 		}
 			
 		reduce_substitutions(equations[i]);
@@ -1794,7 +1823,7 @@ int calc_apriori_semantics(struct ast *r)
 			print_sem_equation(equations[i]);
 
 			fprintf(yyout, " \n\nlast index = %d \n", last_eq_index);
-			fprintf(yyout, " \n//////////////////////////////////////////////////////////// \n\n", i);
+			fprintf(yyout, " \n/////////////////////////////// \n\n", i);
 			}
 		i++;
 	}

@@ -15,13 +15,13 @@
 	int tok;
 }
 
-%type <a> pr maybe_chan chan type fproc c gc g com
+%type <a> pr maybe_chan chan type maybe_fproc fproc c gc g com
 %type <id> IDENTIFIER
 %type <tok> ALL ANY COM SKIP EXIT BREAK WAIT READ WRITE SEQ PAR ALT LOOP TRUE FALSE BOOL
 
 %%
 
-pr      : NET maybe_chan BEG fproc END 
+pr      : NET maybe_chan BEG maybe_fproc END 
 	{ root = new_ast(NODE_PROGRAM, $2, $4); }
 	;
 	
@@ -44,6 +44,12 @@ type    : ALL
 	| ANY 
 	{ $$ = new_ast(ANY, NULL, NULL); }
 	
+maybe_fproc
+	: /*empty*/ 
+	{ $$ = NULL; }
+	| fproc
+	{ $$ = $1; }
+	;
 
 fproc   : FUN IDENTIFIER ':' ':' com
 	{ $$ = new_ast(NODE_FUNC, new_id($2), $5); }
