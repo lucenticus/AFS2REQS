@@ -301,7 +301,7 @@ struct ast* afs_to_sem(struct ast *a)
 		}
 		struct ast *b = malloc(sizeof(struct ast));
 		b->nodetype = SEM_B;
-		b->l = NULL;
+		b->l = a->l;
 		b->r = NULL;
 		return b;
 	} else if (a->nodetype == SKIP) {
@@ -1606,6 +1606,23 @@ int is_equal_subtree(struct ast *a, struct ast *b) {
 		return 0;
 	return 1;
 }
+int apply_exit_rule(struct ast *a) 
+{
+	if (!a)
+		return 0;
+	if (a->nodetype == '*' &&
+	    a->l && a->l->nodetype == SEM_EXIT) {
+		a->nodetype = SEM_TAU;
+		a->l = NULL;
+		a->r = NULL;
+	} else if (a->nodetype == SEM_EXIT) {
+		a->nodetype = SEM_TAU;
+		a->l = NULL;
+		a->r = NULL;
+	}
+	apply_exit_rule(a->l);
+	apply_exit_rule(a->r);	
+}
 
 int calc_apriori_semantics(struct ast *r) 
 {
@@ -1615,6 +1632,7 @@ int calc_apriori_semantics(struct ast *r)
 	int proc_count = 0;
 	while (tmp) {
 		struct ast *sem_proc = afs_to_sem(tmp->proc);
+		apply_exit_rule(sem_proc);
 		struct proc_list *proc = malloc(sizeof(struct proc_list));
 		proc->proc = sem_proc;
 		proc->next = sem_processes;
