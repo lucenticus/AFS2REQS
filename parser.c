@@ -1273,7 +1273,7 @@ int designate_equation(struct ast **a)
 	int indx = compare_proc_list(*a);
 	if (indx == -1) {
 		char buf[10] = {0};
-		sprintf(buf, "%d" , ++last_eq_index);
+		snprintf(buf, 10, "%d" , ++last_eq_index);
 		struct ast *id = new_id(buf);
 		struct ast *n = new_ast(SEM_EQ, id, *a);
 		equations[last_eq_index] = get_sem_tree_copy(*a);
@@ -1395,7 +1395,8 @@ struct ast *build_optimizing_tree(struct proc_list *p)
 			fprintf(yyout, "\n{{ ");
 			print_sem_equation(first->first_comm);
 			fprintf(yyout, ",  ");
-			print_sem_equation(second->first_comm);
+			if (second)
+				print_sem_equation(second->first_comm);
 			fprintf(yyout, " }}\n");
 		}
 		
@@ -1410,7 +1411,10 @@ struct ast *build_optimizing_tree(struct proc_list *p)
 		}
 		tmp_node->nodetype = SEM_PAR;
 		tmp_node->l = first->proc;
-		tmp_node->r = second->proc;
+		if (second)
+			tmp_node->r = second->proc;
+		else 
+			tmp_node->r = NULL;
 		new_tree = tmp_node;
 		while (tmp) {
 			if (tmp != first && tmp != second ) {
@@ -1695,17 +1699,18 @@ void convert_min_fixed_point(struct ast *a, struct ast *curr_proc)
 			
 		} else if (a->l && a->l->nodetype == '*') {			
 			struct ast *tmp = a->l;
+			if (tmp == NULL) {
+				printf("\nERROR in convert_min_fixed_point: \
+					can't find right operand");
+				return;
+			}
 			while (tmp->r != NULL && 
 			       (tmp->r->nodetype == '*' || 
 				tmp->r->nodetype == '+' || 
 				tmp->r->nodetype == '^')) {
 				tmp = tmp->r;					
 			} 
-			if (tmp == NULL) {
-				printf("\nERROR in convert_min_fixed_point: \
-					can't find right operand");
-				return;
-			}
+			
 			struct  ast* pr = new_ast(curr_proc->nodetype, 
 						  curr_proc->l, NULL);
 			struct ast * proc_comp = new_ast('*', tmp->r, pr);
