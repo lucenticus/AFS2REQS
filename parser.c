@@ -225,18 +225,43 @@ struct ast* afs_to_sem(struct ast *a)
 			 fprintf(yyout, "\n");
 		}
 		struct ast *proc = malloc(sizeof(struct ast));
+		if (!proc) {
+			if (logging)
+				yyerror("out of memory");
+			exit(0);
+		}
 		proc->nodetype = SEM_CPROC;
 		proc->l = (struct ast*) ch->id;
 		struct ast *fix_op = malloc(sizeof(struct ast));
+		if (!fix_op) {
+			if (logging)
+				yyerror("out of memory");
+			exit(0);
+		}
 		fix_op->nodetype = '#';
 		struct ast *comp_op = malloc(sizeof(struct ast));
+		if (!comp_op) {
+			if (logging)
+				yyerror("out of memory");
+			exit(0);
+		}
 		comp_op->nodetype = '*';
 		struct ast *in = malloc(sizeof(struct ast));
+		if (!in) {
+			if (logging)
+				yyerror("out of memory");
+			exit(0);
+		}
 		in->nodetype = SEM_CIN;
 		in->l = (struct ast*) ch->id;
 		in->r = (struct ast*) ch->in_id;
 
 		struct ast *out = malloc(sizeof(struct ast));
+		if (!out) {
+			if (logging)
+				yyerror("out of memory");
+			exit(0);
+		}
 		out->nodetype = SEM_COUT;
 		out->l = (struct ast*) ch->id;
 		out->r = (struct ast*) ch->out_id;
@@ -252,6 +277,11 @@ struct ast* afs_to_sem(struct ast *a)
 			fprintf(yyout, "P%s = ", ((struct term_id *)a->l)->name);
 		}
 		struct ast *proc = malloc(sizeof(struct ast));
+		if (!proc) {
+			if (logging)
+				yyerror("out of memory");
+			exit(0);
+		}
 		proc->nodetype = SEM_PROC;
 		proc->r = afs_to_sem(a->r); 
 		proc->l = a->l;
@@ -264,12 +294,22 @@ struct ast* afs_to_sem(struct ast *a)
 			fprintf(yyout, "A%s", ((struct term_id *)a->l)->name);
 		}
 		struct ast *com = malloc(sizeof(struct ast));
+		if (!com) {
+			if (logging)
+				yyerror("out of memory");
+			exit(0);
+		}
 		com->nodetype = SEM_COM;
 		com->l = a->l;
 		com->r = NULL;
 		return com;
 	} else if (a->nodetype == NODE_COM_LIST) {
 		struct ast *com = malloc(sizeof(struct ast));
+		if (!com) {
+			if (logging)
+				yyerror("out of memory");
+			exit(0);
+		}
 		com->nodetype = '*';
 		com->l = afs_to_sem(a->l);
 		if (logging) {
@@ -282,6 +322,11 @@ struct ast* afs_to_sem(struct ast *a)
 			fprintf(yyout, "T");
 		}
 		struct ast *t = malloc(sizeof(struct ast));
+		if (!t) {
+			if (logging)
+				yyerror("out of memory");
+			exit(0);
+		}
 		t->nodetype = SEM_T;
 		t->l = NULL;
 		t->r = NULL;
@@ -291,6 +336,11 @@ struct ast* afs_to_sem(struct ast *a)
 			fprintf(yyout, "F");
 		}
 		struct ast *f = malloc(sizeof(struct ast));
+		if (!f) {
+			if (logging)
+				yyerror("out of memory");
+			exit(0);
+		}
 		f->nodetype = SEM_F;
 		f->l = NULL;
 		f->r = NULL;
@@ -300,6 +350,11 @@ struct ast* afs_to_sem(struct ast *a)
 			fprintf(yyout, "B");
 		}
 		struct ast *b = malloc(sizeof(struct ast));
+		if (!b) {
+			if (logging)
+				yyerror("out of memory");
+			exit(0);
+		}
 		b->nodetype = SEM_B;
 		b->l = a->l;
 		b->r = NULL;
@@ -309,6 +364,11 @@ struct ast* afs_to_sem(struct ast *a)
 			fprintf(yyout, "tau");
 		}
 		struct ast *tau = malloc(sizeof(struct ast));
+		if (!tau) {
+			if (logging)
+				yyerror("out of memory");
+			exit(0);
+		}
 		tau->nodetype = SEM_TAU;
 		tau->l = NULL;
 		tau->r = NULL;
@@ -318,6 +378,11 @@ struct ast* afs_to_sem(struct ast *a)
 			fprintf(yyout, "EXIT");
 		}
 		struct ast *exit = malloc(sizeof(struct ast));
+		if (!exit) {
+			if (logging)
+				yyerror("out of memory");
+			exit(0);
+		}
 		exit->nodetype = SEM_EXIT;
 		exit->l = NULL;
 		exit->r = NULL;
@@ -327,6 +392,11 @@ struct ast* afs_to_sem(struct ast *a)
 			fprintf(yyout, "BREAK");
 		}
 		struct ast *br = malloc(sizeof(struct ast));
+		if (!br) {
+			if (logging)
+				yyerror("out of memory");
+			exit(0);
+		}
 		br->nodetype = SEM_BREAK;
 		br->l = NULL;
 		br->r = NULL;
@@ -336,6 +406,11 @@ struct ast* afs_to_sem(struct ast *a)
 			fprintf(yyout, "TIME");
 		}
 		struct ast *time = malloc(sizeof(struct ast));
+		if (!time) {
+			if (logging)
+				yyerror("out of memory");
+			exit(0);
+		}
 		time->nodetype = SEM_TIME;
 		time->l = NULL;
 		time->r = NULL;
@@ -348,6 +423,11 @@ struct ast* afs_to_sem(struct ast *a)
 				((struct term_id *)a->r)->name);
 		}
 		struct ast *in = malloc(sizeof(struct ast));
+		if (!in) {
+			if (logging)
+				yyerror("out of memory");
+			exit(0);
+		}
 		in->nodetype = SEM_IN;
 		in->l = a->l;
 		in->r = a->r;
@@ -360,6 +440,11 @@ struct ast* afs_to_sem(struct ast *a)
 				((struct term_id *)a->r)->name);
 		}
 		struct ast *out = malloc(sizeof(struct ast));
+		if (!out) {
+			if (logging)
+				yyerror("out of memory");
+			exit(0);
+		}
 		out->nodetype = SEM_OUT;
 		out->l = a->l;
 		out->r = a->r;
@@ -368,6 +453,11 @@ struct ast* afs_to_sem(struct ast *a)
 		return afs_to_sem(a->l); 
 	} else if (a->nodetype == PAR) {
 		struct ast *par_op = malloc(sizeof(struct ast));
+		if (!par_op) {
+			if (logging)
+				yyerror("out of memory");
+			exit(0);
+		}
 		par_op->nodetype = 'U';
 		par_op->l = afs_to_sem(a->l);
 		if (logging) {
@@ -377,6 +467,11 @@ struct ast* afs_to_sem(struct ast *a)
 		return par_op;
 	} else if (a->nodetype == ALT) {
 		struct ast *comp_op = malloc(sizeof(struct ast));
+		if (!comp_op) {
+			if (logging)
+				yyerror("out of memory");
+			exit(0);
+		}
 		if (a->r) {
 			comp_op->nodetype = '+';
 			comp_op->l = afs_to_sem(a->l);
@@ -390,6 +485,11 @@ struct ast* afs_to_sem(struct ast *a)
 		return comp_op;
 	} else if (a->nodetype == LOOP) {
 		struct ast *fix_op = malloc(sizeof(struct ast));
+		if (!fix_op) {
+			if (logging)
+				yyerror("out of memory");
+			exit(0);
+		}
 		fix_op->nodetype = '#';
 		if (logging) {
 			fprintf(yyout, "(");
@@ -402,6 +502,11 @@ struct ast* afs_to_sem(struct ast *a)
 		return fix_op;
 	} else if (a->nodetype == NODE_GC) {
 		struct ast *comp_op = malloc(sizeof(struct ast));
+		if (!comp_op) {
+			if (logging)
+				yyerror("out of memory");
+			exit(0);
+		}
 		comp_op->nodetype = '^';
 		comp_op->l = afs_to_sem(a->l);
 		if (logging) {
@@ -411,6 +516,11 @@ struct ast* afs_to_sem(struct ast *a)
 		return comp_op;
 	} else if (a->nodetype == NODE_GC_LIST) {
 		struct ast *comp_op = malloc(sizeof(struct ast));
+		if (!comp_op) {
+			if (logging)
+				yyerror("out of memory");
+			exit(0);
+		}
 		comp_op->nodetype = '+';
 		comp_op->l = afs_to_sem(a->l);
 		if (logging) {
@@ -430,6 +540,11 @@ void proc_sem_to_par_comp()
 	while (tmp) {
 		if (!sem_root && tmp->next) {
 			struct ast *proc = malloc(sizeof(struct ast));
+			if (!proc) {
+				if (logging)
+					yyerror("out of memory");
+				exit(0);
+			}
 			proc->nodetype = SEM_PAR;
 			proc->l = tmp->proc;
 			proc->r = tmp->next->proc;
@@ -437,6 +552,11 @@ void proc_sem_to_par_comp()
 			tmp = tmp->next->next;
 		} else if (sem_root) {
 			struct ast *proc = malloc(sizeof(struct ast));
+			if (!proc) {
+				if (logging)
+					yyerror("out of memory");
+				exit(0);
+			}
 			proc->nodetype = SEM_PAR;
 			proc->l = sem_root;
 			proc->r = tmp->proc;
@@ -461,6 +581,11 @@ int apply_distributive_law(struct ast *a, struct ast *parent)
 				if (parent->l == a) {
 					struct ast *n1 =
 						malloc(sizeof(struct ast));
+					if (!n1) {
+						if (logging)
+							yyerror("out of memory");
+						exit(0);
+					}
 					n1->nodetype = '+';
 					n1->r = parent->r;
 					n1->l = new_ast(a->nodetype, 
@@ -476,6 +601,11 @@ int apply_distributive_law(struct ast *a, struct ast *parent)
 				} else {
 					struct ast *n1 = 
 						malloc(sizeof(struct ast));
+					if (!n1) {
+						if (logging)
+							yyerror("out of memory");
+						exit(0);
+					}
 					n1->nodetype = '+';
 					n1->l = new_ast(a->nodetype, 
 							a->l->l, 
@@ -494,6 +624,11 @@ int apply_distributive_law(struct ast *a, struct ast *parent)
 				if (parent->l == a) {
 					struct ast *n1 = 
 						malloc(sizeof(struct ast));
+					if (!n1) {
+						if (logging)
+							yyerror("out of memory");
+						exit(0);
+					}
 					n1->nodetype = '+';
 					n1->r = parent->r;
 					n1->l = new_ast(a->nodetype, 
@@ -509,6 +644,11 @@ int apply_distributive_law(struct ast *a, struct ast *parent)
 				} else {
 					struct ast *n1 = 
 						malloc(sizeof(struct ast));
+					if (!n1) {
+						if (logging)
+							yyerror("out of memory");
+						exit(0);
+					}
 					n1->nodetype = '+';
 					n1->l = new_ast(a->nodetype, 
 							a->l, 
@@ -932,10 +1072,20 @@ void add_to_proc_list(struct proc_list **p, struct ast * a)
 {
 	if (*p == NULL) {				
 		*p = malloc(sizeof(struct proc_list));
+		if (!(*p)) {
+			if (logging)
+				yyerror("out of memory");
+			exit(0);
+		}
 		(*p)->proc = a;
 		(*p)->next = NULL;
 	} else {
 		struct proc_list *n = malloc(sizeof(struct proc_list));
+		if (!n) {
+			if (logging)
+				yyerror("out of memory");
+			exit(0);
+		}
 		n->proc = a;
 		n->next = *p;
 		*p = n;
@@ -1017,6 +1167,11 @@ int compare_proc_list(struct ast *a)
 	get_full_proc_list(a, &p);
 	if (!p) {
 		p = malloc(sizeof(struct proc_list));
+		if (!p) {
+			if (logging)
+				yyerror("out of memory");
+			exit(0);
+		}
 		p->proc = a;
 		p->next = NULL;
 	}
@@ -1033,6 +1188,11 @@ int compare_proc_list(struct ast *a)
 			get_full_proc_list(equations[i], &tmp2);
 			/*if (!tmp2) {
 				tmp2 = malloc(sizeof(struct proc_list));
+				if (!node) {
+					if (logging)
+						yyerror("out of memory");
+					exit(0);
+				}
 				tmp->proc = equations[i];
 				tmp->next = NULL;
 				}*/
@@ -1040,9 +1200,14 @@ int compare_proc_list(struct ast *a)
 			get_full_proc_list(initial_equations[i], &tmp2);
 			/*if (!tmp2) {
 				tmp2 = malloc(sizeof(struct proc_list));
+				if (!tmp2) {
+					if (logging)
+						yyerror("out of memory");
+					exit(0);
+				}
 				tmp->proc = initial_equations[i];
 				tmp->next = NULL;
-				}*/
+			 }*/
 		}
 		print_list(tmp);
 		print_list(tmp2);
@@ -1238,6 +1403,11 @@ struct ast *build_optimizing_tree(struct proc_list *p)
 		struct ast *tmp_node = NULL;
 		struct proc_list *tmp = p;
 		tmp_node = malloc(sizeof(struct ast));
+		if (!tmp_node) {
+			if (logging)
+				yyerror("out of memory");
+			exit(0);
+		}
 		tmp_node->nodetype = SEM_PAR;
 		tmp_node->l = first->proc;
 		tmp_node->r = second->proc;
@@ -1245,6 +1415,11 @@ struct ast *build_optimizing_tree(struct proc_list *p)
 		while (tmp) {
 			if (tmp != first && tmp != second ) {
 				struct ast *proc = malloc(sizeof(struct ast));
+				if (!proc) {
+					if (logging)
+						yyerror("out of memory");
+					exit(0);
+				}
 				proc->nodetype = SEM_PAR;				
 				proc->r = tmp->proc;
 				proc->l = tmp_node->r;
@@ -1264,6 +1439,11 @@ struct ast *build_optimizing_tree(struct proc_list *p)
 		struct ast *tmp_node = NULL;
 		struct proc_list *tmp = p;
 		tmp_node = malloc(sizeof(struct ast));
+		if (!tmp_node) {
+			if (logging)
+				yyerror("out of memory");
+			exit(0);
+		}
 		tmp_node->nodetype = SEM_PAR;
 		tmp_node->l = tmp->proc;
 		tmp = tmp->next;
@@ -1272,6 +1452,11 @@ struct ast *build_optimizing_tree(struct proc_list *p)
 		tmp = tmp->next;
 		while (tmp) {			
 			struct ast *proc = malloc(sizeof(struct ast));
+			if (!proc) {
+				if (logging)
+					yyerror("out of memory");
+				exit(0);
+			}
 			proc->nodetype = SEM_PAR;				
 			proc->r = tmp->proc;
 			proc->l = tmp_node->r;
@@ -1332,9 +1517,19 @@ int convert_par_composition(struct ast *a, struct ast *parent)
 			a->l = t;
 		}
 		struct ast *add1 = malloc(sizeof(struct ast));
+		if (!add1) {
+			if (logging)
+				yyerror("out of memory");
+			exit(0);
+		}
 		add1->nodetype = '+';
 
 		struct ast *parll1 = malloc(sizeof(struct ast));
+		if (!parll1) {
+			if (logging)
+				yyerror("out of memory");
+			exit(0);
+		}
 		parll1->nodetype = SEM_PARLL;
 		parll1->l = a->l;
 		parll1->r = a->r;
@@ -1342,14 +1537,29 @@ int convert_par_composition(struct ast *a, struct ast *parent)
 		add1->l = parll1;
 
 		struct ast *add2 = malloc(sizeof(struct ast));
+		if (!add2) {
+			if (logging)
+				yyerror("out of memory");
+			exit(0);
+		}
 		add2->nodetype = '+';
 		
 		struct ast *parll2 = malloc(sizeof(struct ast));
+		if (!parll2) {
+			if (logging)
+				yyerror("out of memory");
+			exit(0);
+		}
 		parll2->nodetype = SEM_PARLL;
 		parll2->l = a->r;
 		parll2->r = a->l;
 		
 		struct ast *parl = malloc(sizeof(struct ast));
+		if (!parl) {
+			if (logging)
+				yyerror("out of memory");
+			exit(0);
+		}
 		parl->nodetype = '|';
 		parl->l = a->l;
 		parl->r = a->r;
@@ -1396,12 +1606,27 @@ void convert_min_fixed_point(struct ast *a, struct ast *curr_proc)
 			if (a->l->l != NULL && 
 			    a->l->l->nodetype == SEM_B) {
 				struct ast *comp = malloc(sizeof(struct ast));
+				if (!comp) {
+					if (logging)
+						yyerror("out of memory");
+					exit(0);
+				}
 				comp->nodetype = '^';
 				struct ast *T = malloc(sizeof(struct ast));
+				if (!T) {
+					if (logging)
+						yyerror("out of memory");
+					exit(0);
+				}
 				T->nodetype = SEM_T;
 				T->l = NULL;
 				T->r = NULL;
 				struct ast *tau = malloc(sizeof(struct ast));
+				if (!tau) {
+					if (logging)
+						yyerror("out of memory");
+					exit(0);
+				}
 				tau->nodetype = SEM_TAU;
 				tau->l = NULL;
 				tau->r = NULL;
@@ -1434,6 +1659,11 @@ void convert_min_fixed_point(struct ast *a, struct ast *curr_proc)
 				
 			if (subst == NULL) {
 				subst = malloc(sizeof(struct subst_list));
+				if (!subst) {
+					if (logging)
+						yyerror("out of memory");
+					exit(0);
+				}
 				if (a->nodetype == '+')
 					subst->p = new_ast(pr->nodetype, 
 							   pr->l, 
@@ -1446,6 +1676,11 @@ void convert_min_fixed_point(struct ast *a, struct ast *curr_proc)
 			} else {
 				struct subst_list *n = 
 					malloc(sizeof(struct subst_list));
+				if (!n) {
+					if (logging)
+						yyerror("out of memory");
+					exit(0);
+				}
 				if (a->nodetype == '+')
 					n->p = new_ast(pr->nodetype, 
 						       pr->l, 
@@ -1480,6 +1715,11 @@ void convert_min_fixed_point(struct ast *a, struct ast *curr_proc)
 			
 			if (subst == NULL) {
 				subst = malloc(sizeof(struct subst_list));
+				if (!subst) {
+					if (logging)
+						yyerror("out of memory");
+					exit(0);
+				}
 				subst->p = new_ast(pr->nodetype, 
 						   pr->l, 
 						   get_sem_tree_copy(a->l));
@@ -1487,6 +1727,11 @@ void convert_min_fixed_point(struct ast *a, struct ast *curr_proc)
 			} else {
 				struct subst_list *n = 
 					malloc(sizeof(struct subst_list));
+				if (!n) {
+					if (logging)
+						yyerror("out of memory");
+					exit(0);
+				}
 				n->p = new_ast(pr->nodetype, 
 					       pr->l, 
 					       get_sem_tree_copy(a->l));
@@ -1634,6 +1879,11 @@ int calc_apriori_semantics(struct ast *r)
 		struct ast *sem_proc = afs_to_sem(tmp->proc);
 		apply_exit_rule(sem_proc);
 		struct proc_list *proc = malloc(sizeof(struct proc_list));
+		if (!proc) {
+			if (logging)
+				yyerror("out of memory");
+			exit(0);
+		}
 		proc->proc = sem_proc;
 		proc->next = sem_processes;
 		sem_processes = proc;
