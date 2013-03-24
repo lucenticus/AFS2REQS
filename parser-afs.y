@@ -1,5 +1,5 @@
-%token BEG END NET CHAN ALL ANY FUN SKIP EXIT BREAK WAIT READ WRITE
-%token SEQ PAR ALT LOOP IDENTIFIER TRUE FALSE BOOL  NEXT COM 
+%token BEG END NET CHAN SHARED_VAR ALL ANY FUN SKIP EXIT BREAK WAIT READ WRITE
+%token SEQ PAR ALT LOOP IDENTIFIER TRUE FALSE BOOL  NEXT COM GET SET
 
 %start pr
 
@@ -15,14 +15,14 @@
 	int tok;
 }
 
-%type <a> pr maybe_chan chan type maybe_fproc fproc c gc g com
+%type <a> pr maybe_chan maybe_shared_var chan sv type maybe_fproc fproc c gc g com
 %type <id> IDENTIFIER
-%type <tok> ALL ANY COM SKIP EXIT BREAK WAIT READ WRITE SEQ PAR ALT LOOP TRUE FALSE BOOL
+%type <tok> ALL ANY COM SKIP EXIT BREAK WAIT READ WRITE SEQ PAR ALT LOOP TRUE FALSE BOOL GET SET
 
 %%
 
-pr      : NET maybe_chan BEG maybe_fproc END 
-	{ root = new_ast(NODE_PROGRAM, $2, $4); }
+pr      : NET maybe_chan maybe_shared_var BEG maybe_fproc END 
+	{ root = new_ast(NODE_PROGRAM, $2, $5); }
 	;
 	
 maybe_chan
@@ -43,7 +43,20 @@ type    : ALL
        
 	| ANY 
 	{ $$ = new_ast(ANY, NULL, NULL); }
-	
+
+maybe_shared_var
+	: /*empty*/ 
+	{ $$ = NULL; }
+	| SHARED_VAR sv 
+	{ $$ = $2; }
+	; 
+sv
+	: IDENTIFIER
+	{ $$ = new_id($1); }
+	| IDENTIFIER ',' sv 
+	{ $$ = new_ast(NODE_SHARED_VAR_LIST, new_id($1), $3); }
+	;
+
 maybe_fproc
 	: /*empty*/ 
 	{ $$ = NULL; }
@@ -82,13 +95,18 @@ c       : COM '(' IDENTIFIER ')'
 
 	| WRITE '(' IDENTIFIER ',' IDENTIFIER ')'
 	{ $$ = new_ast(WRITE, new_id($3), new_id($5)); }
+	
+	| GET '(' IDENTIFIER ',' IDENTIFIER ')'
+	{ $$ = new_ast(GET, new_id($3), new_id($5)); }
+
+	| SET '(' IDENTIFIER ',' IDENTIFIER ')'
+	{ $$ = new_ast(SET, new_id($3), new_id($5)); }
 
 	| SEQ '(' com ')'
 	{ $$ = new_ast(SEQ, $3, NULL); }
 
 	| PAR '(' com ')'
 	{ $$ = new_ast(PAR, $3, NULL); }
-
 
 	| ALT '(' gc ')'
 	{ $$ = new_ast(ALT, $3, NULL); }
@@ -119,6 +137,12 @@ g	: TRUE
 
 	| WRITE '(' IDENTIFIER ',' IDENTIFIER ')' 
 	{ $$ = new_ast(WRITE, new_id($3), new_id($5)); }
+	
+	| GET '(' IDENTIFIER ',' IDENTIFIER ')'
+	{ $$ = new_ast(GET, new_id($3), new_id($5)); }
+
+	| SET '(' IDENTIFIER ',' IDENTIFIER ')'
+	{ $$ = new_ast(SET, new_id($3), new_id($5)); }
 
 %%
 

@@ -19,6 +19,7 @@ IS			(u|U|l|L)*
 "END"			{ count(); return (END); }
 "NET"			{ count(); return (NET); }
 "CHAN"			{ count(); return (CHAN); }
+"SHARED_VAR"		{ count(); return (SHARED_VAR); }
 "ALL"			{ count(); return (ALL); }
 "ANY"			{ count(); return (ANY); }
 "FUN"			{ count(); return (FUN); }
@@ -28,6 +29,8 @@ IS			(u|U|l|L)*
 "wait"			{ count(); return (WAIT); }
 "read"			{ count(); return (READ); }
 "write"			{ count(); return (WRITE); }
+"get"			{ count(); return (GET); }
+"set"			{ count(); return (SET); }
 "SEQ"			{ count(); return (SEQ); }
 "PAR"			{ count(); return (PAR); }
 "ALT"			{ count(); return (ALT); }
@@ -36,6 +39,7 @@ IS			(u|U|l|L)*
 "ff"			{ count(); return (FALSE); }
 "b"			{ count(); return (BOOL); }
 "a"			{ count(); return (COM); }
+
 
 {L}({L}|{D})*		{
 				yylval.id = strdup(yytext);

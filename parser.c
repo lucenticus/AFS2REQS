@@ -116,7 +116,21 @@ struct ast *new_id(char *id)
 	a->r = NULL;
 	return ((struct ast *) a);
 }
-
+struct ast * new_shared_var(char * id) 
+{
+	struct term_id *a = malloc(sizeof(struct term_id));
+	if (!a) {
+		if (logging)
+			yyerror("out of memory");
+		exit(0);
+	}
+	a->nodetype = NODE_ID;
+	a->name = strdup(id);
+	/* add to symtable */
+	a->l = NULL;
+	a->r = NULL;
+	return ((struct ast *) a);
+}
 struct ast *new_chan(struct ast *chan_id, 
 		     struct ast *in_type, 
 		     struct ast *in_id, 
@@ -381,7 +395,7 @@ struct ast* afs_to_sem(struct ast *a)
 		if (!exit) {
 			if (logging)
 				yyerror("out of memory");
-			exit(0);
+			abort();
 		}
 		exit->nodetype = SEM_EXIT;
 		exit->l = NULL;
@@ -449,6 +463,40 @@ struct ast* afs_to_sem(struct ast *a)
 		out->l = a->l;
 		out->r = a->r;
 		return out;
+	} else if (a->nodetype == GET) {
+		if (logging) {
+			fprintf(yyout, "GET");
+			fprintf(yyout, "(%s, %s)", 
+				((struct term_id *)a->l)->name, 
+				((struct term_id *)a->r)->name);
+		}
+		struct ast *get = malloc(sizeof(struct ast));
+		if (!get) {
+			if (logging)
+				yyerror("out of memory");
+			exit(0);
+		}
+		get->nodetype = SEM_GET;
+		get->l = a->l;
+		get->r = a->r;
+		return get;
+	} else if (a->nodetype == SET) {
+		if (logging) {
+			fprintf(yyout, "SET");
+			fprintf(yyout, "(%s, %s)", 
+				((struct term_id *)a->l)->name, 
+				((struct term_id *)a->r)->name);
+		}
+		struct ast *set = malloc(sizeof(struct ast));
+		if (!set) {
+			if (logging)
+				yyerror("out of memory");
+			exit(0);
+		}
+		set->nodetype = SEM_SET;
+		set->l = a->l;
+		set->r = a->r;
+		return set;
 	} else if (a->nodetype == SEQ) {		       
 		return afs_to_sem(a->l); 
 	} else if (a->nodetype == PAR) {
@@ -2187,7 +2235,21 @@ void print_sem_equation(struct ast *a)
 		fprintf(yyout, ", ");
 		print_sem_equation(a->r);
 		fprintf(yyout, ")");
-	} else if (a->nodetype == SEM_CIN) {
+	} else if (a->nodetype == SEM_GET) {
+		fprintf(yyout, "GET");
+		fprintf(yyout, "(");
+		print_sem_equation(a->l);
+		fprintf(yyout, ", ");
+		print_sem_equation(a->r);
+		fprintf(yyout, ")");
+	} else if (a->nodetype == SEM_SET) {
+		fprintf(yyout, "SET");
+		fprintf(yyout, "(");
+		print_sem_equation(a->l);
+		fprintf(yyout, ", ");
+		print_sem_equation(a->r);
+		fprintf(yyout, ")");
+	}else if (a->nodetype == SEM_CIN) {
 		fprintf(yyout, "CIN");
 		fprintf(yyout, "(");
 		print_sem_equation(a->l);
@@ -2203,6 +2265,13 @@ void print_sem_equation(struct ast *a)
 		fprintf(yyout, ")");
 	} else if (a->nodetype == SEM_GAMMA) {
 		fprintf(yyout, "gamma");
+		fprintf(yyout, "(");
+		print_sem_equation(a->l);
+		fprintf(yyout, ", ");
+		print_sem_equation(a->r);
+		fprintf(yyout, ")");
+	} else if (a->nodetype == SEM_OMEGA) {
+		fprintf(yyout, "omega");
 		fprintf(yyout, "(");
 		print_sem_equation(a->l);
 		fprintf(yyout, ", ");

@@ -33,6 +33,7 @@ enum NODETYPE {
 	NODE_ID = 1000,
 	NODE_CHAN_LIST,
 	NODE_CHAN,
+	NODE_SHARED_VAR_LIST,
 	NODE_COM,
 	NODE_PROGRAM,
 	NODE_FUNC_LIST,   /*5*/
@@ -46,6 +47,8 @@ enum NODETYPE {
 	SEM_OUT,
 	SEM_CIN,
 	SEM_COUT,        /*15*/
+	SEM_GET,
+	SEM_SET,
 	SEM_TIME,
 	SEM_BREAK,
 	SEM_EXIT,        
@@ -58,6 +61,7 @@ enum NODETYPE {
 	SEM_PAR,        /*25*/
 	SEM_PARLL,
 	SEM_GAMMA,
+	SEM_OMEGA,
 	SEM_NULL,
 	SEM_EQ
 };
@@ -130,7 +134,7 @@ struct ast *new_chan(struct ast *chan_id,
 		     struct ast *in_id, 
 		     struct ast *out_type, 
 		     struct ast *out_id);
-
+struct ast *new_shared_var(char * id);
 void print_tree(struct ast *a);
 struct ast * get_sem_tree_copy(struct ast *node);
 void search_processes(struct ast *a);
