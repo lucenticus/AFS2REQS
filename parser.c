@@ -998,6 +998,23 @@ int apply_communication_rule(struct ast *a, struct ast *parent)
 				a->l = NULL;
 				a->r = NULL;
 			}
+		} else if (a->l && a->r && (
+		    a->l->nodetype == SEM_GET  && a->r->nodetype == SEM_SET ||
+		    a->l->nodetype == SEM_SET  && a->r->nodetype == SEM_GET  ||
+		    a->l->nodetype == SEM_SET  && a->r->nodetype == SEM_SET)) {
+			struct term_id *l1 = (struct term_id *) a->l->l;
+			struct term_id *l2 = (struct term_id *) a->l->r;
+			struct term_id *r1 = (struct term_id *) a->r->l;
+			struct term_id *r2 = (struct term_id *) a->r->r;
+			if (strcmp(l1->name, r1->name) == 0) {
+				a->nodetype = SEM_OMEGA;
+				a->l = new_id(l2->name);
+				a->r = new_id(r2->name);
+			} else {
+				a->nodetype = SEM_NULL;
+				a->l = NULL;
+				a->r = NULL;
+			}
 		} else {
 			a->nodetype = SEM_NULL;
 			a->l = NULL;
@@ -1034,8 +1051,11 @@ int apply_axioms_for_ll_operation(struct ast *a, struct ast *parent)
 			   (a->l->nodetype == SEM_IN ||
 			    a->l->nodetype == SEM_CIN ||
 			    a->l->nodetype == SEM_OUT ||
-			    a->l->nodetype == SEM_COUT || 
-			    a->l->nodetype == SEM_GAMMA || 
+			    a->l->nodetype == SEM_COUT ||
+			    a->l->nodetype == SEM_GET ||
+			    a->l->nodetype == SEM_SET ||
+			    a->l->nodetype == SEM_GAMMA ||
+			    a->l->nodetype == SEM_OMEGA ||
 			    a->l->nodetype == SEM_COM ||
 			    a->l->nodetype == SEM_TAU ||
 			    a->l->nodetype == SEM_NULL )) {
