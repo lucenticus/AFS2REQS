@@ -822,6 +822,18 @@ int apply_basis_axioms(struct ast *a, struct ast *parent)
 			a->l = a->l->l;
 
 			return 1;
+		} else if (a->l && a->r && 
+			   a->l->nodetype == SEM_EQ &&
+			   a->r->nodetype == SEM_EQ &&
+			   is_equal_subtree(a->l->l, a->r->l)) {
+			// X + X = X
+			if (logging) {
+				fprintf(yyout, "X + X = X");
+			}
+			a->nodetype = a->l->nodetype;
+			a->r = a->l->r;
+			a->l = a->l->l;
+			return 1;
 		} else if (a->l && a->l->nodetype == '^' &&  
 			   a->r && a->r->nodetype == '^' || 
 			   a->l && a->l->nodetype == '*' &&  
@@ -1392,7 +1404,7 @@ int apply_equational_characterization(struct ast *a, struct ast *parent)
 		   (a->nodetype == '^' || a->nodetype == '*')) {
 		if (a->r && a->r->nodetype == '+') {
 			designate_equation(&a->r->l);
-			designate_equation(&a->r->r);
+			designate_equation(&a->r->r);	       
 		} else 
 			designate_equation(&a->r);
 		
@@ -1905,7 +1917,6 @@ int is_equal_subtree(struct ast *a, struct ast *b) {
 	if (a == NULL && b != NULL || a != NULL && b == NULL) {
 		return 0;
 	}
-
 	
 	if (a->nodetype != b->nodetype) {
 		return 0;
@@ -2159,9 +2170,20 @@ int calc_apriori_semantics(struct ast *r)
 			}
 		} while (retval && iter++ < MAX_ITER);
 			
-
 	
 		apply_equational_characterization(equations[i], NULL);
+
+		iter = 0;
+		do {
+			if (logging) {
+				fprintf(yyout, " = \n\n+++ Apply basis axiom : ");
+			}
+			retval = apply_basis_axioms(equations[i], NULL);
+			if (logging) {
+				fprintf(yyout, " +++\n\n = ");
+				print_sem_equation(equations[i]);
+			}
+		} while (retval && iter++ < MAX_ITER);
 		
 		if (logging) {
 			fprintf(yyout, " = \n\n+++ Apply equational_characterization +++\n\nP(%d) = ", i);
@@ -2173,7 +2195,8 @@ int calc_apriori_semantics(struct ast *r)
 
 			fprintf(yyout, " \n\nlast index = %d \n", last_eq_index);
 			fprintf(yyout, " \n/////////////////////////////// \n\n", i);
-			}
+		}
+		
 		i++;
 	}
 	
@@ -2183,9 +2206,9 @@ int calc_apriori_semantics(struct ast *r)
 	i = 1;
 	while (i <= last_eq_index && i < MAX_EQ) {
 		fprintf(yyout, "\nP(%d) = ", i);
-		/* print_sem_equation(initial_equations[i]); */
+		print_sem_equation(initial_equations[i]);
 
-		/* fprintf(yyout, " = "); */
+		fprintf(yyout, " = ");
 
 		print_sem_equation(equations[i]);
 		fprintf(yyout, "\n");
