@@ -1190,6 +1190,7 @@ int apply_encapsulation_operation(struct ast *a, struct ast *parent)
 			     a->l->nodetype == SEM_OUT ||
 			     a->l->nodetype == SEM_COUT)) {
 				struct ast *n = new_ast(SEM_NULL, NULL, NULL);
+				free(a->l);
 				a->l = n;
 			}
 		}
@@ -1204,6 +1205,7 @@ int apply_encapsulation_operation(struct ast *a, struct ast *parent)
 			     a->l->l->nodetype == SEM_OUT ||
 			     a->l->l->nodetype == SEM_COUT)) {
 				struct ast *n = new_ast(SEM_NULL, NULL, NULL);
+				free(a->l->l);
 				a->l->l = n;
 			}
 		}
@@ -1215,6 +1217,7 @@ int apply_encapsulation_operation(struct ast *a, struct ast *parent)
 			     a->r->l->nodetype == SEM_OUT ||
 			     a->r->l->nodetype == SEM_COUT)) {
 				struct ast *n = new_ast(SEM_NULL, NULL, NULL);
+				free(a->r->l);
 				a->r->l = n;
 			}
 		}
@@ -1811,6 +1814,7 @@ void convert_min_fixed_point(struct ast *a, struct ast *curr_proc)
 				tau->r = NULL;
 				comp->l = T;
 				comp->r = tau;
+				free(a->r);
 				a->r = comp;
 				a->nodetype = '+';
 			       
@@ -1832,6 +1836,8 @@ void convert_min_fixed_point(struct ast *a, struct ast *curr_proc)
 						  NULL);
 			struct ast * cp = get_sem_tree_copy(tmp);
 			tmp->nodetype = '*';
+			free(tmp->l);
+			free(tmp->r);
 			tmp->r = pr;
 			tmp->l = cp;
 
@@ -1920,9 +1926,12 @@ void convert_min_fixed_point(struct ast *a, struct ast *curr_proc)
 			}
 		}
 		if (a->nodetype == '#') {
+			struct ast *t = a->l;
+			free(a->r);
 			a->nodetype = a->l->nodetype;
 			a->r = a->l->r;
 			a->l = a->l->l;
+			free(t);
 		}
 	}
 	convert_min_fixed_point(a->l, curr_proc);	
@@ -1994,7 +2003,9 @@ void reduce_substitutions(struct ast *a)
 	while (tmp) {
 	
 		if (tmp->p && tmp->p->r->nodetype == a->nodetype) {
-			if (is_equal_subtree(tmp->p->r, a)) { 
+			if (is_equal_subtree(tmp->p->r, a)) {
+				free(a->l);
+				free(a->r);
 				a->nodetype = tmp->p->nodetype;
 				a->l = tmp->p->l;
 				a->r = NULL;
@@ -2036,11 +2047,15 @@ int apply_exit_rule(struct ast *a)
 		return 0;
 	if (a->nodetype == '*' &&
 	    a->l && a->l->nodetype == SEM_EXIT) {
+		free(a->l);
+		free(a->r);
 		a->nodetype = SEM_TAU;
 		a->l = NULL;
 		a->r = NULL;
 	} else if (a->nodetype == SEM_EXIT) {
-		a->nodetype = SEM_TAU;
+		free(a->l);
+		free(a->r);		
+		a->nodetype = SEM_TAU;		
 		a->l = NULL;
 		a->r = NULL;
 	}
