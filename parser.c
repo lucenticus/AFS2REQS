@@ -743,17 +743,19 @@ int apply_basis_axioms(struct ast *a, struct ast *parent)
 			a->nodetype = a->r->nodetype;			
 			a->l = a->r->l;
 			a->r = a->r->r;
-			free(a->r);			
+			free(t);			
 			return 1;
 		} else if (a->r && a->r->nodetype == SEM_TAU) {
 			// X * tau = X			
 			if (logging) {
 				fprintf(yyout, "X * tau = X");
 			}
+			struct ast *t = a->l;
+			free(a->r);
 			a->nodetype = a->l->nodetype;
 			a->r = a->l->r;
 			a->l = a->l->l;
-
+			free(t);
 			return 1;
 		} else if (a->l && a->l->nodetype == '+') {
 			// (X + Y) * Z = X * Z + Y * Z
@@ -766,6 +768,7 @@ int apply_basis_axioms(struct ast *a, struct ast *parent)
 			struct ast *right_add = new_ast(a->nodetype, 
 							a->l->r, 
 							a->r);
+			free(a->l);
 			a->nodetype = '+';
 			a->l = left_add;
 			a->r = right_add;		       
@@ -959,6 +962,9 @@ int apply_axioms_for_communication(struct ast *a, struct ast *parent)
 			//  (b1 ^ X) | (b2 ^ Y) = (b1 | b2) ^ (X || Y)
 			struct ast * left = new_ast('|', a->l->l, a->r->l);
 			struct ast * right = new_ast(SEM_PAR, a->l->r, a->r->r);
+			free(a->l);
+			free(a->r);
+			
 			a->nodetype = '^';
 			a->l = left;
 			a->r = right;			
@@ -968,6 +974,9 @@ int apply_axioms_for_communication(struct ast *a, struct ast *parent)
 			// (a1 * X) | (a2 * Y) = (a1 | a2) * (X || Y)
 			struct ast * left = new_ast('|', a->l->l, a->r->l);
 			struct ast * right = new_ast(SEM_PAR, a->l->r, a->r->r);
+			free(a->l);
+			free(a->r);			
+			
 			a->nodetype = '*';
 			a->l = left;
 			a->r = right;			
@@ -979,6 +988,8 @@ int apply_axioms_for_communication(struct ast *a, struct ast *parent)
 			// (a * X) | (b ^ Y) = (a | b) ^ (X || Y)
 			struct ast * left = new_ast('|', a->l->l, a->r->l);
 			struct ast * right = new_ast(SEM_PAR, a->l->r, a->r->r);
+			free(a->l);
+			free(a->r);			
 			a->nodetype = '^';
 			a->l = left;
 			a->r = right;
@@ -989,6 +1000,8 @@ int apply_axioms_for_communication(struct ast *a, struct ast *parent)
 				// (a1 * X) | a2 = (a1 | a2) * X
 				struct ast * left = new_ast('|', a->l->l, a->r);
 				struct ast * right = a->l->r;
+				free(a->l);
+				free(a->r);			
 				a->nodetype = '*';
 				a->l = left;
 				a->r = right;
@@ -997,6 +1010,9 @@ int apply_axioms_for_communication(struct ast *a, struct ast *parent)
 				// a1 | (a2 * X) = (a1 | a2) * X
 				struct ast * left = new_ast('|', a->l, a->r->l);
 				struct ast * right = a->r->r;
+				free(a->l);
+				free(a->r);
+			
 				a->nodetype = '*';
 				a->l = left;
 				a->r = right;
@@ -1008,7 +1024,9 @@ int apply_axioms_for_communication(struct ast *a, struct ast *parent)
 				// (b ^ X) | a = (a | b) ^ X
 				struct ast * left = new_ast('|', a->l->l, a->r);
 				struct ast * right = a->l->r;
-				a->nodetype = '^';
+				free(a->l);
+				free(a->r);			
+				a->nodetype = '^';				
 				a->l = left;
 				a->r = right;
 				return 1;
@@ -1016,6 +1034,8 @@ int apply_axioms_for_communication(struct ast *a, struct ast *parent)
 				// a | (b ^ X) = (a | b) ^ X
 				struct ast * left = new_ast('|', a->l, a->r->l);
 				struct ast * right = a->r->r;
+				free(a->l);
+				free(a->r);			
 				a->nodetype = '^';
 				a->l = left;
 				a->r = right;
