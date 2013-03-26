@@ -729,6 +729,8 @@ int apply_basis_axioms(struct ast *a, struct ast *parent)
 				fprintf(yyout, "@ * X = @");
 			}
 			a->nodetype = SEM_NULL;
+			free(a->l);
+			
 			a->l = NULL;
 			a->r = NULL;
 			return 1;
@@ -737,6 +739,8 @@ int apply_basis_axioms(struct ast *a, struct ast *parent)
 			if (logging) {
 				fprintf(yyout, "tau * X = X");
 			}
+			free(a->l);
+			
 			a->nodetype = a->r->nodetype;
 			a->l = a->r->l;
 			a->r = a->r->r;
@@ -746,10 +750,13 @@ int apply_basis_axioms(struct ast *a, struct ast *parent)
 			if (logging) {
 				fprintf(yyout, "X * tau = X");
 			}
+			free(a->r);
+			
 			a->nodetype = a->l->nodetype;
+			
 			a->r = a->l->r;
 			a->l = a->l->l;
-
+			
 			return 1;
 		} else if (a->l && a->l->nodetype == '+') {
 			// (X + Y) * Z = X * Z + Y * Z
@@ -762,6 +769,8 @@ int apply_basis_axioms(struct ast *a, struct ast *parent)
 			struct ast *right_add = new_ast(a->nodetype, 
 							a->l->r, 
 							a->r);
+			free(a->l);
+			
 			a->nodetype = '+';
 			a->l = left_add;
 			a->r = right_add;		       
@@ -796,6 +805,7 @@ int apply_basis_axioms(struct ast *a, struct ast *parent)
 			if (logging) {
 				fprintf(yyout, "@ ^ X = @");
 			}
+			free(a->l);
 			a->nodetype = SEM_NULL;
 			a->l = NULL;
 			a->r = NULL;
@@ -807,6 +817,7 @@ int apply_basis_axioms(struct ast *a, struct ast *parent)
 			if (logging) {
 				fprintf(yyout, "@ + X = X");
 			}
+			free(a->l);
 			a->nodetype = a->r->nodetype;
 			a->l = a->r->l;
 			a->r = a->r->r;
@@ -817,6 +828,7 @@ int apply_basis_axioms(struct ast *a, struct ast *parent)
 			if (logging) {
 				fprintf(yyout, "X + @ = X");
 			}
+			free(a->r);
 			a->nodetype = a->l->nodetype;
 			a->r = a->l->r;
 			a->l = a->l->l;
@@ -852,6 +864,8 @@ int apply_basis_axioms(struct ast *a, struct ast *parent)
 					}
 				}
 				a->nodetype = a->l->nodetype;
+				free(a->l);
+				free(a->r);
 				a->r = new_ast('+', a->l->r, a->r->r);
 				a->l = a->l->l;
 				return 1;
@@ -886,6 +900,7 @@ int apply_basis_axioms(struct ast *a, struct ast *parent)
 			if (logging) {
 				fprintf(yyout, "tau || X = X");
 			}
+			free(a->l);
 			a->nodetype = a->r->nodetype;
 			a->l = a->r->l;
 			a->r = a->r->r;
@@ -896,6 +911,7 @@ int apply_basis_axioms(struct ast *a, struct ast *parent)
 			if (logging) {
 				fprintf(yyout, "X || tau = X");
 			}
+			free(a->r);
 			a->nodetype = a->l->nodetype;
 			a->r = a->l->r;
 			a->l = a->l->l;
