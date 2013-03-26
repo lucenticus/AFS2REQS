@@ -729,7 +729,6 @@ int apply_basis_axioms(struct ast *a, struct ast *parent)
 			}
 			a->nodetype = SEM_NULL;
 			free(a->l);
-			free(a->r);
 			a->l = NULL;
 			a->r = NULL;
 			return 1;
@@ -738,24 +737,22 @@ int apply_basis_axioms(struct ast *a, struct ast *parent)
 			if (logging) {
 				fprintf(yyout, "tau * X = X");
 			}
-			struct ast *t = a->r;
 			free(a->l);
-			a->nodetype = a->r->nodetype;			
+			
+			a->nodetype = a->r->nodetype;
 			a->l = a->r->l;
 			a->r = a->r->r;
-			free(t);			
 			return 1;
 		} else if (a->r && a->r->nodetype == SEM_TAU) {
 			// X * tau = X			
 			if (logging) {
 				fprintf(yyout, "X * tau = X");
 			}
-			struct ast *t = a->l;
 			free(a->r);
 			a->nodetype = a->l->nodetype;
+			
 			a->r = a->l->r;
 			a->l = a->l->l;
-			free(t);
 			return 1;
 		} else if (a->l && a->l->nodetype == '+') {
 			// (X + Y) * Z = X * Z + Y * Z
@@ -803,6 +800,7 @@ int apply_basis_axioms(struct ast *a, struct ast *parent)
 			if (logging) {
 				fprintf(yyout, "@ ^ X = @");
 			}
+			free(a->l);
 			a->nodetype = SEM_NULL;
 			free(a->l);
 			free(a->r);
@@ -817,11 +815,9 @@ int apply_basis_axioms(struct ast *a, struct ast *parent)
 				fprintf(yyout, "@ + X = X");
 			}
 			free(a->l);
-			struct ast *t = a->r;
 			a->nodetype = a->r->nodetype;
 			a->l = a->r->l;
 			a->r = a->r->r;
-			free(t);
 			return 1;
 		} else if (a->r && a->r->nodetype == SEM_NULL) {
 			// X + @ = X
@@ -829,12 +825,9 @@ int apply_basis_axioms(struct ast *a, struct ast *parent)
 				fprintf(yyout, "X + @ = X");
 			}
 			free(a->r);
-			struct ast *t = a->l;
-			
 			a->nodetype = a->l->nodetype;
 			a->r = a->l->r;
 			a->l = a->l->l;
-			free(t);
 			
 			return 1;
 		} else if (a->l && a->r && 
@@ -845,15 +838,10 @@ int apply_basis_axioms(struct ast *a, struct ast *parent)
 			if (logging) {
 				fprintf(yyout, "X + X = X");
 			}
-			free(a->r);
-			struct ast *t = a->l;
-			
 			a->nodetype = a->l->nodetype;
 			
 			a->r = a->l->r;
 			a->l = a->l->l;
-			
-			free(t);
 			return 1;
 		} else if (a->l && a->l->nodetype == '^' &&  
 			   a->r && a->r->nodetype == '^' || 
@@ -874,14 +862,9 @@ int apply_basis_axioms(struct ast *a, struct ast *parent)
 						    "a * X + a * Y = a * (X + Y)");
 					}
 				}
-				struct ast *t1 = a->l;
-				struct ast *t2 = a->r;
-				
 				a->nodetype = a->l->nodetype;
 				a->r = new_ast('+', a->l->r, a->r->r);
 				a->l = a->l->l;
-				free(t1);
-				free(t2);
 				return 1;
 			}
 		} else if (a->l && a->l->nodetype == '^' && 
@@ -905,15 +888,8 @@ int apply_basis_axioms(struct ast *a, struct ast *parent)
 						    "a * X + a * Y = a * (X + Y)");
 					}
 				}
-				struct ast *t1 = a->l;
-				struct ast *t2 = a->r;
-				
 				a->l->r = new_ast(a->nodetype, a->l->r, a->r->l->r);
 				a->r = a->r->r;
-				
-				free(t1);
-				free(t2);
-				
 				return 1;
 			}
 		}
@@ -924,11 +900,9 @@ int apply_basis_axioms(struct ast *a, struct ast *parent)
 				fprintf(yyout, "tau || X = X");
 			}
 			free(a->l);
-			struct ast *t = a->r;
 			a->nodetype = a->r->nodetype;
 			a->l = a->r->l;
 			a->r = a->r->r;
-			free(t);
 			return 1;
 		}
 		if (a->r && a->r->nodetype == SEM_TAU) {
@@ -937,13 +911,9 @@ int apply_basis_axioms(struct ast *a, struct ast *parent)
 				fprintf(yyout, "X || tau = X");
 			}
 			free(a->r);
-			struct ast *t = a->l;
-			
 			a->nodetype = a->l->nodetype;
 			a->r = a->l->r;
 			a->l = a->l->l;
-			
-			free(t);
 			return 1;
 		}
 	}
