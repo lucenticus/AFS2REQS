@@ -1064,11 +1064,22 @@ int apply_communication_rule(struct ast *a, struct ast *parent)
 			struct term_id *r2 = (struct term_id *) a->r->r;
 			if (strcmp(l1->name, r1->name) == 0 &&
 			    strcmp(l2->name, r2->name) == 0) {
+				free(a->l);
+				free(a->r);				
 				a->nodetype = SEM_GAMMA;
 				a->l = new_id(l1->name);
 				a->r = new_id(l2->name);
 			} else {
+				free(l1);
+				free(l2);
+				free(r1);
+				free(r2);
+				
+				free(a->l);
+				free(a->r);
+				
 				a->nodetype = SEM_NULL;
+				
 				a->l = NULL;
 				a->r = NULL;
 			}
@@ -1081,15 +1092,32 @@ int apply_communication_rule(struct ast *a, struct ast *parent)
 			struct term_id *r1 = (struct term_id *) a->r->l;
 			struct term_id *r2 = (struct term_id *) a->r->r;
 			if (strcmp(l1->name, r1->name) == 0) {
+				free(a->l);
+				free(a->r);
+				
+				// TODO: To add 3-rd index
 				a->nodetype = SEM_OMEGA;
 				a->l = new_id(l2->name);
 				a->r = new_id(r2->name);
 			} else {
+				free(l1);
+				free(l2);
+				free(r1);
+				free(r2);
+				
+				free(a->l);
+				free(a->r);
+				
+				
 				a->nodetype = SEM_NULL;
 				a->l = NULL;
 				a->r = NULL;
 			}
 		} else {
+			free(a->l);
+			free(a->r);
+				
+				
 			a->nodetype = SEM_NULL;
 			a->l = NULL;
 			a->r = NULL;
