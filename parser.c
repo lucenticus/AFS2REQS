@@ -1136,6 +1136,8 @@ int apply_axioms_for_ll_operation(struct ast *a, struct ast *parent)
 		return 0;
 	if (a->nodetype == SEM_PARLL && 
 	    a->l && a->l->nodetype == SEM_NULL) {
+		free(a->l);
+		free(a->r);
 		a->nodetype = SEM_NULL;
 		a->l = NULL;
 		a->r = NULL;
@@ -1145,9 +1147,12 @@ int apply_axioms_for_ll_operation(struct ast *a, struct ast *parent)
 		if (a->l && a->l->nodetype == '^' ||
 		    a->l && a->l->nodetype == '*' ) {
 			struct ast *n = new_ast(SEM_PAR, a->l->r, a->r);
+			struct ast *t = a->l;
+			free(a->r);
 			a->nodetype = a->l->nodetype;
 			a->l = a->l->l;
 			a->r = n;
+			free(t);
 			return 1;
 		} else if (a->l && 
 			   (a->l->nodetype == SEM_IN ||
