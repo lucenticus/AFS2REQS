@@ -802,8 +802,6 @@ int apply_basis_axioms(struct ast *a, struct ast *parent)
 			}
 			free(a->l);
 			a->nodetype = SEM_NULL;
-			free(a->l);
-			free(a->r);
 			a->l = NULL;
 			a->r = NULL;
 			return 1;
@@ -932,9 +930,6 @@ int apply_axioms_for_communication(struct ast *a, struct ast *parent)
 			//  (b1 ^ X) | (b2 ^ Y) = (b1 | b2) ^ (X || Y)
 			struct ast * left = new_ast('|', a->l->l, a->r->l);
 			struct ast * right = new_ast(SEM_PAR, a->l->r, a->r->r);
-			free(a->l);
-			free(a->r);
-			
 			a->nodetype = '^';
 			a->l = left;
 			a->r = right;			
@@ -944,8 +939,6 @@ int apply_axioms_for_communication(struct ast *a, struct ast *parent)
 			// (a1 * X) | (a2 * Y) = (a1 | a2) * (X || Y)
 			struct ast * left = new_ast('|', a->l->l, a->r->l);
 			struct ast * right = new_ast(SEM_PAR, a->l->r, a->r->r);
-			free(a->l);
-			free(a->r);			
 			
 			a->nodetype = '*';
 			a->l = left;
@@ -958,8 +951,6 @@ int apply_axioms_for_communication(struct ast *a, struct ast *parent)
 			// (a * X) | (b ^ Y) = (a | b) ^ (X || Y)
 			struct ast * left = new_ast('|', a->l->l, a->r->l);
 			struct ast * right = new_ast(SEM_PAR, a->l->r, a->r->r);
-			free(a->l);
-			free(a->r);			
 			a->nodetype = '^';
 			a->l = left;
 			a->r = right;
@@ -970,8 +961,6 @@ int apply_axioms_for_communication(struct ast *a, struct ast *parent)
 				// (a1 * X) | a2 = (a1 | a2) * X
 				struct ast * left = new_ast('|', a->l->l, a->r);
 				struct ast * right = a->l->r;
-				free(a->l);
-				free(a->r);			
 				a->nodetype = '*';
 				a->l = left;
 				a->r = right;
@@ -980,9 +969,6 @@ int apply_axioms_for_communication(struct ast *a, struct ast *parent)
 				// a1 | (a2 * X) = (a1 | a2) * X
 				struct ast * left = new_ast('|', a->l, a->r->l);
 				struct ast * right = a->r->r;
-				free(a->l);
-				free(a->r);
-			
 				a->nodetype = '*';
 				a->l = left;
 				a->r = right;
@@ -994,8 +980,6 @@ int apply_axioms_for_communication(struct ast *a, struct ast *parent)
 				// (b ^ X) | a = (a | b) ^ X
 				struct ast * left = new_ast('|', a->l->l, a->r);
 				struct ast * right = a->l->r;
-				free(a->l);
-				free(a->r);			
 				a->nodetype = '^';				
 				a->l = left;
 				a->r = right;
@@ -1004,8 +988,6 @@ int apply_axioms_for_communication(struct ast *a, struct ast *parent)
 				// a | (b ^ X) = (a | b) ^ X
 				struct ast * left = new_ast('|', a->l, a->r->l);
 				struct ast * right = a->r->r;
-				free(a->l);
-				free(a->r);			
 				a->nodetype = '^';
 				a->l = left;
 				a->r = right;
@@ -1034,20 +1016,10 @@ int apply_communication_rule(struct ast *a, struct ast *parent)
 			struct term_id *r2 = (struct term_id *) a->r->r;
 			if (strcmp(l1->name, r1->name) == 0 &&
 			    strcmp(l2->name, r2->name) == 0) {
-				free(a->l);
-				free(a->r);				
 				a->nodetype = SEM_GAMMA;
 				a->l = new_id(l1->name);
 				a->r = new_id(l2->name);
 			} else {
-				free(l1);
-				free(l2);
-				free(r1);
-				free(r2);
-				
-				free(a->l);
-				free(a->r);
-				
 				a->nodetype = SEM_NULL;
 				
 				a->l = NULL;
@@ -1062,31 +1034,17 @@ int apply_communication_rule(struct ast *a, struct ast *parent)
 			struct term_id *r1 = (struct term_id *) a->r->l;
 			struct term_id *r2 = (struct term_id *) a->r->r;
 			if (strcmp(l1->name, r1->name) == 0) {
-				free(a->l);
-				free(a->r);
 				
 				// TODO: To add 3-rd index
 				a->nodetype = SEM_OMEGA;
 				a->l = new_id(l2->name);
 				a->r = new_id(r2->name);
 			} else {
-				free(l1);
-				free(l2);
-				free(r1);
-				free(r2);
-				
-				free(a->l);
-				free(a->r);
-				
-				
 				a->nodetype = SEM_NULL;
 				a->l = NULL;
 				a->r = NULL;
 			}
 		} else {
-			free(a->l);
-			free(a->r);
-				
 				
 			a->nodetype = SEM_NULL;
 			a->l = NULL;
@@ -1106,8 +1064,6 @@ int apply_axioms_for_ll_operation(struct ast *a, struct ast *parent)
 		return 0;
 	if (a->nodetype == SEM_PARLL && 
 	    a->l && a->l->nodetype == SEM_NULL) {
-		free(a->l);
-		free(a->r);
 		a->nodetype = SEM_NULL;
 		a->l = NULL;
 		a->r = NULL;
@@ -1117,12 +1073,9 @@ int apply_axioms_for_ll_operation(struct ast *a, struct ast *parent)
 		if (a->l && a->l->nodetype == '^' ||
 		    a->l && a->l->nodetype == '*' ) {
 			struct ast *n = new_ast(SEM_PAR, a->l->r, a->r);
-			struct ast *t = a->l;
-			free(a->r);
 			a->nodetype = a->l->nodetype;
 			a->l = a->l->l;
 			a->r = n;
-			free(t);
 			return 1;
 		} else if (a->l && 
 			   (a->l->nodetype == SEM_IN ||
@@ -1160,7 +1113,6 @@ int apply_encapsulation_operation(struct ast *a, struct ast *parent)
 			     a->l->nodetype == SEM_OUT ||
 			     a->l->nodetype == SEM_COUT)) {
 				struct ast *n = new_ast(SEM_NULL, NULL, NULL);
-				free(a->l);
 				a->l = n;
 			}
 		}
@@ -1175,7 +1127,6 @@ int apply_encapsulation_operation(struct ast *a, struct ast *parent)
 			     a->l->l->nodetype == SEM_OUT ||
 			     a->l->l->nodetype == SEM_COUT)) {
 				struct ast *n = new_ast(SEM_NULL, NULL, NULL);
-				free(a->l->l);
 				a->l->l = n;
 			}
 		}
@@ -1187,7 +1138,6 @@ int apply_encapsulation_operation(struct ast *a, struct ast *parent)
 			     a->r->l->nodetype == SEM_OUT ||
 			     a->r->l->nodetype == SEM_COUT)) {
 				struct ast *n = new_ast(SEM_NULL, NULL, NULL);
-				free(a->r->l);
 				a->r->l = n;
 			}
 		}
@@ -1784,7 +1734,6 @@ void convert_min_fixed_point(struct ast *a, struct ast *curr_proc)
 				tau->r = NULL;
 				comp->l = T;
 				comp->r = tau;
-				free(a->r);
 				a->r = comp;
 				a->nodetype = '+';
 			       
@@ -1806,8 +1755,6 @@ void convert_min_fixed_point(struct ast *a, struct ast *curr_proc)
 						  NULL);
 			struct ast * cp = get_sem_tree_copy(tmp);
 			tmp->nodetype = '*';
-			free(tmp->l);
-			free(tmp->r);
 			tmp->r = pr;
 			tmp->l = cp;
 
@@ -1896,12 +1843,10 @@ void convert_min_fixed_point(struct ast *a, struct ast *curr_proc)
 			}
 		}
 		if (a->nodetype == '#') {
-			struct ast *t = a->l;
-			free(a->r);
 			a->nodetype = a->l->nodetype;
 			a->r = a->l->r;
 			a->l = a->l->l;
-			free(t);
+			
 		}
 	}
 	convert_min_fixed_point(a->l, curr_proc);	
@@ -1974,8 +1919,6 @@ void reduce_substitutions(struct ast *a)
 	
 		if (tmp->p && tmp->p->r->nodetype == a->nodetype) {
 			if (is_equal_subtree(tmp->p->r, a)) {
-				free(a->l);
-				free(a->r);
 				a->nodetype = tmp->p->nodetype;
 				a->l = tmp->p->l;
 				a->r = NULL;
@@ -2017,14 +1960,10 @@ int apply_exit_rule(struct ast *a)
 		return 0;
 	if (a->nodetype == '*' &&
 	    a->l && a->l->nodetype == SEM_EXIT) {
-		free(a->l);
-		free(a->r);
 		a->nodetype = SEM_TAU;
 		a->l = NULL;
 		a->r = NULL;
 	} else if (a->nodetype == SEM_EXIT) {
-		free(a->l);
-		free(a->r);		
 		a->nodetype = SEM_TAU;		
 		a->l = NULL;
 		a->r = NULL;
