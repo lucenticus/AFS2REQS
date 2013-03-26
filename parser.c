@@ -1064,6 +1064,7 @@ int apply_axioms_for_ll_operation(struct ast *a, struct ast *parent)
 		return 0;
 	if (a->nodetype == SEM_PARLL && 
 	    a->l && a->l->nodetype == SEM_NULL) {
+		free(a->l);
 		a->nodetype = SEM_NULL;
 		a->l = NULL;
 		a->r = NULL;
