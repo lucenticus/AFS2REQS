@@ -1278,8 +1278,8 @@ int compare_proc_list(struct ast *a)
 				tmp->next = NULL;
 			 }*/
 		}
-		print_list(tmp);
-		print_list(tmp2);
+		//print_list(tmp);
+		//print_list(tmp2);
 		int is_eq = 1;
 		if (get_list_size(p) != get_list_size(tmp2)) {
 			is_eq = 0;
@@ -1326,6 +1326,12 @@ int compare_proc_list(struct ast *a)
 					fprintf(yyout, " >>>>>> (%d)\n", i);
 			}			
 		}
+		struct proc_list *tt = tmp2;
+		while (tmp2) {
+			tt = tmp2;
+			tmp2 = tmp2->next;
+			free(tt);
+		}
 	}
 	struct proc_list *t = p;
 	while (p) {
@@ -1333,6 +1339,7 @@ int compare_proc_list(struct ast *a)
 		p = p->next;
 		free(t);
 	}
+	
 	
 	return -1;
 }
@@ -1593,8 +1600,14 @@ struct ast * combining_par_composition(struct ast *a)
 		}
 		tmp = tmp->next;
 	}
-
-	return build_optimizing_tree(p);
+	struct ast *ret = build_optimizing_tree(p);
+	t = p;
+	while (p) {
+		t = p;
+		p = p->next;
+		free(t);
+	}
+	return ret;
 }
 
 int convert_par_composition(struct ast *a, struct ast *parent) 
