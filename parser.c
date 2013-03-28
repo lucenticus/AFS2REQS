@@ -110,27 +110,14 @@ struct ast *new_id(char *id)
 		exit(0);
 	}
 	a->nodetype = NODE_ID;
-	a->name = strdup(id);
+	if (id)
+		a->name = strdup(id);
 	/* add to symtable */
 	a->l = NULL;
 	a->r = NULL;
 	return ((struct ast *) a);
 }
-struct ast * new_shared_var(char * id) 
-{
-	struct term_id *a = malloc(sizeof(struct term_id));
-	if (!a) {
-		if (logging)
-			yyerror("out of memory");
-		exit(0);
-	}
-	a->nodetype = NODE_ID;
-	a->name = strdup(id);
-	/* add to symtable */
-	a->l = NULL;
-	a->r = NULL;
-	return ((struct ast *) a);
-}
+
 struct ast *new_chan(struct ast *chan_id, 
 		     struct ast *in_type, 
 		     struct ast *in_id, 
@@ -1357,7 +1344,27 @@ int compare_proc_list(struct ast *a)
 			}			
 		}
 	}
+	struct proc_list *t = p;
+	while (p) {
+		t = p;
+		p = p->next;
+		free(t);
+	}
+	
 	return -1;
+}
+void free_ast_tree(struct ast *a) 
+{
+	if (a) {
+		free_ast_tree(a->l);
+		free_ast_tree(a->r);		
+		if (a->nodetype == NODE_ID) {
+			free(((struct term_id*)a)->name);
+			((struct term_id*)a)->name = NULL;
+		}
+		free(a);
+		a = NULL;
+	}		
 }
 int designate_equation(struct ast **a) 
 {
@@ -1374,25 +1381,24 @@ int designate_equation(struct ast **a)
 		char buf[10] = {0};
 		snprintf(buf, 10, "%d" , ++last_eq_index);
 		struct ast *id = new_id(buf);
-		struct ast *n = new_ast(SEM_EQ, id, *a);
-		equations[last_eq_index] = get_sem_tree_copy(*a);
-
+		struct ast *n = new_ast(SEM_EQ, id, NULL);
+		equations[last_eq_index] = get_sem_tree_copy(*a);		
 		*a = n;
-		struct proc_list *p = NULL;
+		/*struct proc_list *p = NULL;
 		get_proc_list(*a, &p);
 		if (p) {
 			initial_equations[last_eq_index] = p->proc;
-		}
+			}*/
 	} else {
 		char buf[10] = {0};
 		sprintf(buf, "%d" , indx);
 		struct ast *id = new_id(buf);
-		struct ast *n = new_ast(SEM_EQ, id, *a);
+		struct ast *n = new_ast(SEM_EQ, id, NULL);
 		*a = n;
-		if (last_eq_index != curr_eq_index) {
+		/*if (last_eq_index != curr_eq_index) {
 			initial_equations[last_eq_index] = 
 				initial_equations[indx];
-		}
+				}*/
 	}
 
 	return 1;
@@ -2192,7 +2198,9 @@ int calc_apriori_semantics(struct ast *r)
 			
 	
 		apply_equational_characterization(equations[i], NULL);
-
+		struct ast *tt = equations[i];
+		equations[i] = get_sem_tree_copy(equations[i]);
+		free_ast_tree(tt);
 		iter = 0;
 		do {
 			if (logging) {
