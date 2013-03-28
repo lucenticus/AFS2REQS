@@ -725,10 +725,12 @@ int apply_basis_axioms(struct ast *a, struct ast *parent)
 				fprintf(yyout, "tau * X = X");
 			}
 			free(a->l);
-			
+			struct ast *t = a->r;
 			a->nodetype = a->r->nodetype;
 			a->l = a->r->l;
 			a->r = a->r->r;
+			free(t);
+			t = NULL;
 			return 1;
 		} else if (a->r && a->r->nodetype == SEM_TAU) {
 			// X * tau = X			
@@ -736,10 +738,13 @@ int apply_basis_axioms(struct ast *a, struct ast *parent)
 				fprintf(yyout, "X * tau = X");
 			}
 			free(a->r);
-			a->nodetype = a->l->nodetype;
-			
+			a->r = NULL;
+			struct ast * t = a->l;
+			a->nodetype = a->l->nodetype;			
 			a->r = a->l->r;
 			a->l = a->l->l;
+			free(t);
+			t = NULL;
 			return 1;
 		} else if (a->l && a->l->nodetype == '+') {
 			// (X + Y) * Z = X * Z + Y * Z
@@ -753,6 +758,7 @@ int apply_basis_axioms(struct ast *a, struct ast *parent)
 							a->l->r, 
 							a->r);
 			free(a->l);
+			a->l = NULL;
 			a->nodetype = '+';
 			a->l = left_add;
 			a->r = right_add;		       
@@ -800,6 +806,7 @@ int apply_basis_axioms(struct ast *a, struct ast *parent)
 				fprintf(yyout, "@ + X = X");
 			}
 			free(a->l);
+			a->l = NULL;
 			a->nodetype = a->r->nodetype;
 			a->l = a->r->l;
 			a->r = a->r->r;
@@ -810,6 +817,7 @@ int apply_basis_axioms(struct ast *a, struct ast *parent)
 				fprintf(yyout, "X + @ = X");
 			}
 			free(a->r);
+			a->r = NULL;
 			a->nodetype = a->l->nodetype;
 			a->r = a->l->r;
 			a->l = a->l->l;
@@ -2027,6 +2035,12 @@ int calc_apriori_semantics(struct ast *r)
 	while (i <= last_eq_index && i < MAX_EQ) {
 		curr_eq_index = i;
 		printf("%d\n", i);
+		if (logging) {
+			fprintf(yyout, 
+			     " = \n\n+++ Optimize parallel composition +++\n\n = ");
+			print_sem_equation(equations[i]);
+			fflush(yyout);
+		}
 		initial_equations[i] = get_sem_tree_copy(equations[i]);
 		reduce_substitutions(initial_equations[i]);
 		if (logging) {
@@ -2198,9 +2212,9 @@ int calc_apriori_semantics(struct ast *r)
 			
 	
 		apply_equational_characterization(equations[i], NULL);
-		struct ast *tt = equations[i];
-		equations[i] = get_sem_tree_copy(equations[i]);
-		free_ast_tree(tt);
+		
+
+		
 		iter = 0;
 		do {
 			if (logging) {
@@ -2224,7 +2238,9 @@ int calc_apriori_semantics(struct ast *r)
 			fprintf(yyout, " \n\nlast index = %d \n", last_eq_index);
 			fprintf(yyout, " \n/////////////////////////////// \n\n", i);
 		}
-		
+		/*struct ast *tt = equations[i];
+		equations[i] = get_sem_tree_copy(equations[i]);
+		free_ast_tree(tt);*/
 		i++;
 	}
 	
