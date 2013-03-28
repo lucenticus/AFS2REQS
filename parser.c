@@ -614,18 +614,11 @@ int apply_distributive_law(struct ast *a, struct ast *parent)
 		if (a->l && a->l->nodetype == '+') {
 			if (parent && parent->nodetype == '+') {
 				if (parent->l == a) {
-					struct ast *n1 =
-						malloc(sizeof(struct ast));
-					if (!n1) {
-						if (logging)
-							yyerror("out of memory");
-						exit(0);
-					}
-					n1->nodetype = '+';
-					n1->r = parent->r;
-					n1->l = new_ast(a->nodetype, 
-							a->l->r, 
-							a->r);
+					struct ast *n1 = new_ast('+',
+								new_ast(a->nodetype, 
+									a->l->r, 
+									a->r),
+								parent->r);
 					parent->r = n1;
 					parent->l = new_ast(a->nodetype, 
 							    a->l->l, 
@@ -634,40 +627,27 @@ int apply_distributive_law(struct ast *a, struct ast *parent)
 					a = parent;
 				} else {
 					struct ast *n1 = 
-						malloc(sizeof(struct ast));
-					if (!n1) {
-						if (logging)
-							yyerror("out of memory");
-						exit(0);
-					}
-					n1->nodetype = '+';
-					n1->l = new_ast(a->nodetype, 
-							a->l->l, 
-							a->r);
-					n1->r = new_ast(a->nodetype, 
-							a->l->r, 
-							a->r);
+						new_ast('+',
+							new_ast(a->nodetype, 
+								a->l->l, 
+								a->r),
+							new_ast(a->nodetype, 
+								a->l->r, 
+								a->r));
 					parent->r = n1;
 					free(a);
 					a = parent;
-					
 				}
 			}
 		} else if (a->r && a->r->nodetype == '+') {
 			if (parent && parent->nodetype == '+') {
 				if (parent->l == a) {
 					struct ast *n1 = 
-						malloc(sizeof(struct ast));
-					if (!n1) {
-						if (logging)
-							yyerror("out of memory");
-						exit(0);
-					}
-					n1->nodetype = '+';
-					n1->r = parent->r;
-					n1->l = new_ast(a->nodetype, 
+						new_ast('+',
+							new_ast(a->nodetype, 
 							a->l, 
-							a->r->r);
+							a->r->r),	
+							parent->r);
 					parent->r = n1;
 					parent->l = new_ast(a->nodetype, 
 							    a->l, 
@@ -677,19 +657,13 @@ int apply_distributive_law(struct ast *a, struct ast *parent)
 					//printf("3");
 				} else {
 					struct ast *n1 = 
-						malloc(sizeof(struct ast));
-					if (!n1) {
-						if (logging)
-							yyerror("out of memory");
-						exit(0);
-					}
-					n1->nodetype = '+';
-					n1->l = new_ast(a->nodetype, 
-							a->l, 
-							a->r->l);
-					n1->r = new_ast(a->nodetype, 
-							a->l, 
-							a->r->r);
+						new_ast('+',
+							new_ast(a->nodetype, 
+								a->l, 
+								a->r->l),
+							new_ast(a->nodetype, 
+								a->l, 
+								a->r->r));
 					parent->r = n1;
 					free(a);
 					a = parent;
@@ -937,7 +911,8 @@ int apply_axioms_for_communication(struct ast *a, struct ast *parent)
 			
 			a->nodetype = '*';
 			a->l = left;
-			a->r = right;			
+			a->r = right;	
+			
 			return 1;
 		} if (a->l && a->l->nodetype == '*' &&
 		      a->r && a->r->nodetype == '^' ||
@@ -1661,25 +1636,9 @@ int convert_par_composition(struct ast *a, struct ast *parent)
 		}
 		add2->nodetype = '+';
 		
-		struct ast *parll2 = malloc(sizeof(struct ast));
-		if (!parll2) {
-			if (logging)
-				yyerror("out of memory");
-			exit(0);
-		}
-		parll2->nodetype = SEM_PARLL;
-		parll2->l = a->r;
-		parll2->r = a->l;
+		struct ast *parll2 = new_ast(SEM_PARLL, a->r, a->l);
 		
-		struct ast *parl = malloc(sizeof(struct ast));
-		if (!parl) {
-			if (logging)
-				yyerror("out of memory");
-			exit(0);
-		}
-		parl->nodetype = '|';
-		parl->l = a->l;
-		parl->r = a->r;
+		struct ast *parl = new_ast('|', a->l, a->r);
 		
 		add2->l = parll2;
 		add2->r = parl;
