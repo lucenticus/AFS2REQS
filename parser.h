@@ -63,7 +63,8 @@ enum NODETYPE {
 	SEM_GAMMA,
 	SEM_OMEGA,
 	SEM_NULL,
-	SEM_EQ
+	SEM_EQ,
+	SEM_FUNC_ID
 };
 
 struct ast {
@@ -79,6 +80,8 @@ struct term_id {
 	struct ast *r;
 	char *name;
 };
+
+
 struct term_chan {
 	int nodetype;
 	struct ast *l;

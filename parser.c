@@ -36,7 +36,7 @@ void count()
 			column += 8 - (column % 8);
 		else
 			column++;
-	//if (logging)
+	if (logging)
 		ECHO;
 }
 static unsigned symhash(char *sym) 
@@ -1005,10 +1005,12 @@ int apply_communication_rule(struct ast *a, struct ast *parent)
 			struct term_id *r2 = (struct term_id *) a->r->r;
 			if (strcmp(l1->name, r1->name) == 0) {
 				
-				// TODO: To add 3-rd index
 				a->nodetype = SEM_OMEGA;
-				a->l = new_id(l2->name);
-				a->r = new_id(r2->name);
+				
+				a->l = new_id(l1->name);
+				a->r = new_ast(SEM_FUNC_ID, 
+					       new_id(l2->name),
+					       new_id(r2->name));
 			} else {
 				a->nodetype = SEM_NULL;
 				a->l = NULL;
@@ -2222,8 +2224,8 @@ int calc_apriori_semantics(struct ast *r)
 	i = 1;
 	while (i <= last_eq_index && i < MAX_EQ) {
 		fprintf(yyout, "\nP(%d) = ", i);
-		print_sem_equation(initial_equations[i]);
-		fprintf(yyout, " = ");
+		/* print_sem_equation(initial_equations[i]); */
+		/* fprintf(yyout, " = "); */
 		print_sem_equation(equations[i]);
 		fprintf(yyout, "\n");
 		i++;
@@ -2331,8 +2333,10 @@ void print_sem_equation(struct ast *a)
 		fprintf(yyout, "omega");
 		fprintf(yyout, "(");
 		print_sem_equation(a->l);
+		fprintf(yyout, "; ");
+		print_sem_equation(a->r->l);
 		fprintf(yyout, ", ");
-		print_sem_equation(a->r);
+		print_sem_equation(a->r->r);		
 		fprintf(yyout, ")");
 	} else if (a->nodetype == SEM_NULL) {
 		fprintf(yyout, "@");
