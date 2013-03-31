@@ -654,7 +654,6 @@ int apply_distributive_law(struct ast *a, struct ast *parent)
 							    a->r->l);
 					free(a);
 					a = parent;
-					//printf("3");
 				} else {
 					struct ast *n1 = 
 						new_ast('+',
@@ -699,6 +698,7 @@ int apply_basis_axioms(struct ast *a, struct ast *parent)
 				fprintf(yyout, "tau * X = X");
 			}
 			free(a->l);
+			a->l = NULL;
 			struct ast *t = a->r;
 			a->nodetype = a->r->nodetype;
 			a->l = a->r->l;
@@ -867,6 +867,7 @@ int apply_basis_axioms(struct ast *a, struct ast *parent)
 				fprintf(yyout, "tau || X = X");
 			}
 			free(a->l);
+			a->l = NULL;
 			a->nodetype = a->r->nodetype;
 			a->l = a->r->l;
 			a->r = a->r->r;
@@ -878,6 +879,7 @@ int apply_basis_axioms(struct ast *a, struct ast *parent)
 				fprintf(yyout, "X || tau = X");
 			}
 			free(a->r);
+			a->r = NULL;
 			a->nodetype = a->l->nodetype;
 			a->r = a->l->r;
 			a->l = a->l->l;
@@ -1036,7 +1038,6 @@ int apply_axioms_for_ll_operation(struct ast *a, struct ast *parent)
 		return 0;
 	if (a->nodetype == SEM_PARLL && 
 	    a->l && a->l->nodetype == SEM_NULL) {
-		free(a->l);
 		a->nodetype = SEM_NULL;
 		a->l = NULL;
 		a->r = NULL;
@@ -1061,12 +1062,14 @@ int apply_axioms_for_ll_operation(struct ast *a, struct ast *parent)
 			    a->l->nodetype == SEM_OMEGA ||
 			    a->l->nodetype == SEM_COM ||
 			    a->l->nodetype == SEM_TAU ||
-			    a->l->nodetype == SEM_NULL )) {
+			    a->l->nodetype == SEM_NULL )) 
+			{
 			a->nodetype = '*';
 			return 1;
 			
-		}
+		} 
 	}
+		
 	int retval = apply_axioms_for_ll_operation(a->l, a);
 	if (retval)
 		return retval;
@@ -1333,6 +1336,7 @@ int compare_proc_list(struct ast *a)
 			tt = tmp2;
 			tmp2 = tmp2->next;
 			free(tt);
+			tt = NULL;
 		}
 	}
 	struct proc_list *t = p;
@@ -1340,6 +1344,7 @@ int compare_proc_list(struct ast *a)
 		t = p;
 		p = p->next;
 		free(t);
+		t = NULL;
 	}
 	
 	
@@ -1608,6 +1613,7 @@ struct ast * combining_par_composition(struct ast *a)
 		t = p;
 		p = p->next;
 		free(t);
+		t = NULL;
 	}
 	return ret;
 }
@@ -2248,7 +2254,8 @@ void remove_proc_node(struct ast *a, struct ast *parent)
 				parent->r = a->r;
 		}
 		remove_proc_node(a->r, parent);
-		free(a);	
+		free(a);
+		a = NULL;
 		return;
 	}
 	remove_proc_node(a->l, a);
@@ -2273,7 +2280,7 @@ void print_sem_equation(struct ast *a)
 					((struct term_id*)a->l)->name);
 			}
 		} else
-			print_sem_equation(a->r);
+		    print_sem_equation(a->r);
 		
 	} else if (a->nodetype == SEM_EQ) {
 		fprintf(yyout, "P");
