@@ -129,6 +129,7 @@ void count();
 static unsigned symhash(char *sym) ;
 struct symbol *lookup(char*);
 void addref(char*, int);
+struct ast* find_token(struct ast *node, int nodetype);
 
 struct ast *new_ast(int nodetype, struct ast *l, struct ast *r);
 struct ast *new_id(char *id);
@@ -176,7 +177,10 @@ int calc_apriori_semantics(struct ast *r);
 void remove_proc_node(struct ast *a, struct ast *parent);
 
 void print_sem_equation(struct ast *a);
-void find_possible_races(struct ast *a);
+
 void analyze_res_equation(); 
+void find_possible_races(struct ast *a, int eq_idx);
+int find_sem_eq_node(struct ast *a, int eq_idx, int iter) 
+void find_possible_deadlocks(int eq_indx);
 
 #endif /*PARSER_AFS_H*/

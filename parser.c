@@ -144,7 +144,17 @@ struct ast *new_chan(struct ast *chan_id,
 
 	return ((struct ast *) ch);
 }
-
+struct ast* find_token(struct ast *node, 
+		       int nodetype) 
+{
+	struct ast * a;
+	if (node == NULL || node->nodetype == nodetype)
+		return node;
+	a  = find_token(node->l, nodetype);
+	if (a == NULL)
+		a = find_token(node->r, nodetype);
+	return a;
+}
 void print_tree(struct ast *a) 
 {
 	if (a == NULL)
@@ -2250,26 +2260,66 @@ int calc_apriori_semantics(struct ast *r)
 	analyze_res_equation();
 	return 0;
 }
-void find_possible_races(struct ast *a) 
+void find_possible_races(struct ast *a, int eq_idx) 
 {
 	if (!a)
 		return;
 	if (a->nodetype == SEM_OMEGA) {
-		fprintf(yyout, "\nPossible race on variable \'%s\', ",
+		fprintf(yyout, "\n--------\nP(%d): ", eq_idx);
+		fprintf(yyout, "Possible race on variable \'%s\', ",
 			((struct term_id*)a->l)->name);
-		fprintf(yyout, "shared with \'%s\' and \'%s\' driver functions",
+		fprintf(yyout, "shared with \'%s\' and \'%s\' functions",
 			((struct term_id*)a->r->l)->name,
 			((struct term_id*)a->r->r)->name);		
 	}
-	find_possible_races(a->l);
-	find_possible_races(a->r);
+	find_possible_races(a->l, eq_idx);
+	find_possible_races(a->r, eq_idx);
+}
+int find_sem_eq_node(struct ast *a, int eq_idx, int iter) 
+{
+	if (!a)
+		return;
+	struct ast *eq = find_token(a, SEM_EQ);
+	
+	if (eq) {
+		struct term_id *id = (struct term_id *) eq->l;
+		int idx = atoi(id->name);
+		if (idx == eq_idx) {
+			fprintf(yyout, "\n\tP(%d) = ", iter);			
+			print_sem_equation(equations[iter]);
+			find_possible_deadlocks(iter);
+			return 1;
+		}
+	} 
+	if (find_sem_eq_node(a->l, eq_idx, iter) == 0)
+		return  find_sem_eq_node(a->r, eq_idx, iter);	
+	else 
+		return 1;
+}
+void find_possible_deadlocks(int eq_idx) 
+{
+	int i;
+	for (i = 1; i <= last_eq_index && i <= MAX_EQ && i < eq_idx; i++) {
+		if (find_sem_eq_node(equations[i], eq_idx, i))
+			return;
+	}
 }
 void analyze_res_equation() 
 {
 	int i;
-	for (i = 1; i < last_eq_index && i < MAX_EQ; i++) {
-		find_possible_races(equations[i]);
+	for (i = 1; i <= last_eq_index && i < MAX_EQ; i++) {
+		find_possible_races(equations[i], i);
 	}
+	
+	for (i = 1; i <= last_eq_index && i <= MAX_EQ; i++) {
+		if (equations[i] && equations[i]->nodetype == SEM_NULL) {
+			fprintf(yyout, "\n--------\nP(%d): ", i);		
+			fprintf(yyout, "Possible deadlock stack trace:");
+			fprintf(yyout, "\n\tP(%d) = ", i);			
+			print_sem_equation(equations[i]);			
+			find_possible_deadlocks(i);
+		}
+	}			
 }
 void remove_proc_node(struct ast *a, struct ast *parent) 
 {
