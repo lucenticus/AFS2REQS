@@ -180,7 +180,7 @@ void print_sem_equation(struct ast *a);
 
 void analyze_res_equation(); 
 void find_possible_races(struct ast *a, int eq_idx);
-int find_sem_eq_node(struct ast *a, int eq_idx, int iter) 
+int find_sem_eq_node(struct ast *a, int eq_idx, int iter);
 void find_possible_deadlocks(int eq_indx);
 
 #endif /*PARSER_AFS_H*/
