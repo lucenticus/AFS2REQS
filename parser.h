@@ -24,8 +24,8 @@
 #ifndef PARSER_AFS_H
 #define PARSER_AFS_H
 #define NHASH (9997)
-#define MAX_EQ (10000)
-#define MAX_ITER (10000)
+#define MAX_EQ (1000)
+#define MAX_ITER (1000)
 #define MAX_PROC (10)
 #include <stdlib.h>
 
@@ -35,32 +35,32 @@ enum NODETYPE {
 	NODE_CHAN,
 	NODE_SHARED_VAR_LIST,
 	NODE_COM,
-	NODE_PROGRAM,
-	NODE_FUNC_LIST,   /*5*/
+	NODE_PROGRAM,    /*5*/
+	NODE_FUNC_LIST,
 	NODE_FUNC,
 	NODE_GC_LIST,
 	NODE_GC,
-	NODE_COM_LIST,
-	SEM_PROC,        /*10*/
+	NODE_COM_LIST,   /*10*/
+	SEM_PROC,        
 	SEM_CPROC,
 	SEM_IN,
 	SEM_OUT,
-	SEM_CIN,
-	SEM_COUT,        /*15*/
+	SEM_CIN,         /*15*/
+	SEM_COUT,        
 	SEM_GET,
 	SEM_SET,
 	SEM_TIME,
-	SEM_BREAK,
+	SEM_BREAK,       /*20*/
 	SEM_EXIT,        
 	SEM_TAU,
-	SEM_B,           /*20*/
+	SEM_B,           
 	SEM_F,
-	SEM_T,
+	SEM_T,           /*25*/
 	SEM_COM,         
 	SEM_COM_LIST,
-	SEM_PAR,        /*25*/
+	SEM_PAR,        
 	SEM_PARLL,
-	SEM_GAMMA,
+	SEM_GAMMA,       /*30*/
 	SEM_OMEGA,
 	SEM_NULL,
 	SEM_EQ,
@@ -176,5 +176,7 @@ int calc_apriori_semantics(struct ast *r);
 void remove_proc_node(struct ast *a, struct ast *parent);
 
 void print_sem_equation(struct ast *a);
+void find_possible_races(struct ast *a);
+void analyze_res_equation(); 
 
 #endif /*PARSER_AFS_H*/

@@ -1087,7 +1087,7 @@ int apply_encapsulation_operation(struct ast *a, struct ast *parent)
 			    (a->l->nodetype == SEM_IN ||
 			     a->l->nodetype == SEM_CIN ||
 			     a->l->nodetype == SEM_OUT ||
-			     a->l->nodetype == SEM_COUT)) {
+			     a->l->nodetype == SEM_COUT )) {
 				struct ast *n = new_ast(SEM_NULL, NULL, NULL);
 				a->l = n;
 			}
@@ -1442,7 +1442,9 @@ struct ast * find_first_communication_node(struct ast *a)
 	if (a->nodetype == SEM_CIN ||
 	    a->nodetype == SEM_COUT ||
 	    a->nodetype == SEM_IN || 
-	    a->nodetype == SEM_OUT ) {
+	    a->nodetype == SEM_OUT || 
+	    a->nodetype == SEM_GET ||
+	    a->nodetype == SEM_SET) {
 		return a;
 	}
 	struct ast *tmp = NULL;
@@ -1460,6 +1462,11 @@ int is_can_communication(struct ast *a, struct ast *b)
 	     a->nodetype == SEM_COUT && b->nodetype == SEM_IN) &&
 	    is_equal_subtree(a->l, b->l) &&
 	    is_equal_subtree(a->r, b->r))  {
+		return 1;
+	} else if ((a->nodetype == SEM_GET && b->nodetype == SEM_SET ||
+		    b->nodetype == SEM_GET && a->nodetype == SEM_SET ||
+		    b->nodetype == SEM_SET && a->nodetype == SEM_SET) &&
+		   is_equal_subtree(a->l, b->l)) {
 		return 1;
 	}
 
@@ -1871,7 +1878,9 @@ int is_exist_communication_op(struct ast *a)
 	if (a->nodetype == SEM_IN || 
 	    a->nodetype == SEM_CIN || 
 	    a->nodetype == SEM_OUT || 
-	    a->nodetype == SEM_COUT) {
+	    a->nodetype == SEM_COUT ||
+	    a->nodetype == SEM_GET ||
+	    a->nodetype == SEM_SET) {
 		return 1;
 	}
 	if (is_exist_communication_op(a->l))
@@ -1912,7 +1921,9 @@ void reduce_substitutions(struct ast *a)
 	struct subst_list *tmp = subst;
 	while (tmp) {
 	
-		if (tmp->p && tmp->p->r->nodetype == a->nodetype) {
+		if (tmp->p && 
+		    tmp->p->r &&
+		    tmp->p->r->nodetype == a->nodetype) {
 			if (is_equal_subtree(tmp->p->r, a)) {
 				a->nodetype = tmp->p->nodetype;
 				a->l = tmp->p->l;
@@ -2236,9 +2247,30 @@ int calc_apriori_semantics(struct ast *r)
 		fprintf(yyout, "\n");
 		i++;
 	}
+	analyze_res_equation();
 	return 0;
 }
-
+void find_possible_races(struct ast *a) 
+{
+	if (!a)
+		return;
+	if (a->nodetype == SEM_OMEGA) {
+		fprintf(yyout, "\nPossible race on variable \'%s\', ",
+			((struct term_id*)a->l)->name);
+		fprintf(yyout, "shared with \'%s\' and \'%s\' driver functions",
+			((struct term_id*)a->r->l)->name,
+			((struct term_id*)a->r->r)->name);		
+	}
+	find_possible_races(a->l);
+	find_possible_races(a->r);
+}
+void analyze_res_equation() 
+{
+	int i;
+	for (i = 1; i < last_eq_index && i < MAX_EQ; i++) {
+		find_possible_races(equations[i]);
+	}
+}
 void remove_proc_node(struct ast *a, struct ast *parent) 
 {
 	if (a == NULL)
@@ -2261,6 +2293,7 @@ void remove_proc_node(struct ast *a, struct ast *parent)
 	remove_proc_node(a->l, a);
 	remove_proc_node(a->r, a);
 }
+
 void print_sem_equation(struct ast *a) 
 {
 	if (a == NULL)
